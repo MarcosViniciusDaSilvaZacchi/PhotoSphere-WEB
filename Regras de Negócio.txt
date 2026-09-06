@@ -1,0 +1,16 @@
+15. PhotoSphere – Plataforma de Compartilhamento de Fotos
+Visão Geral
+O PhotoSphere é uma plataforma onde usuários podem fazer upload de fotos, organizar álbuns
+e interagir com a comunidade.
+Funcionalidades para Usuários
+Cadastro e autenticação.
+Exploração de fotos organizadas por categorias.
+Upload de fotos e criação de álbuns.
+Favoritar e curtir fotos de outros usuários.
+Comentários nas publicações.
+Seguir / deixar de seguir outros usuários.
+Feed "Seguindo" (fotos de quem você segue) e Feed "Geral" (todas as fotos).
+Funcionalidades para Administradores
+Dashboard administrativo com estatísticas.
+Cadastro e gerenciamento de categorias de fotos.
+Moderação de conteúdos e controle de usuários.
