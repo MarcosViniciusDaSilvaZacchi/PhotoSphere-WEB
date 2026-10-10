@@ -1,8 +1,10 @@
-# Checklists — PhotoSphere | Atividades 1, 2, 3, 4 e 5
+# Checklists — PhotoSphere | Atividades 1, 2, 3, 4, 5, 6 e 7
 
-> **Disciplina:** Programação Web (FrontEnd)
-> **Projeto:** PhotoSphere (#15)
-> **Aluno:** Marcos Vinicius da Silva Zacchi
+> **Disciplina:** Programação Web (FrontEnd)  
+> **Projeto:** PhotoSphere (#15)  
+> **Aluno:** Marcos Vinicius da Silva Zacchi  
+
+---
 
 ## ATIVIDADE 1 — PARTE A: Backend (API)
 
@@ -177,5 +179,78 @@
 - [X] Estilização completa alinhada à identidade visual monocromática laranja (`#FF6622`) e Bootstrap 5
 - [X] Prints de evidência organizados na pasta `photosphere-frontend/01 - Docs/atividade05/`
 
+---
 
+## ATIVIDADE 6 — PARTE A: Backend (Checkpoint de Consistência)
 
+- [X] Revisão de consistência dos módulos existentes (`search` e `user`) confirmando o padrão Route → Controller → Service → Model
+- [X] Nenhuma rota (`*Routes.js`) contém lógica de negócio
+- [X] Nenhum Controller consulta o Model diretamente, sem passar pelo Service
+- [X] Nenhum Service faz referência a `req` / `res`
+- [X] Todo Controller usa `success()` / `error()` de `apiResponse.js`
+- [X] Toda rota que chama uma função async está envolvida em `asyncHandler`
+- [X] Toda validação de entrada usa `express-validator`, sem nenhum `if` manual escondido
+- [X] `config/constants.js` sem constantes soltas sem uso nem valores de validação fora dela
+- [X] A constante de limite da bio (`BIO_MAX: 255`) é usada exatamente uma vez, no lugar certo
+- [X] `checkpoint-01.md` criado e respondido em `01 - Docs/atividade06/` e em `E6/`
+- [X] Todos os endpoints já construídos continuam respondendo como esperado
+- [X] Nenhuma linha de código nova necessária no backend
+
+---
+
+## ATIVIDADE 6 — PARTE B: Frontend (Componentização e Consistência Visual)
+
+- [X] `bootstrap-icons` incluído via CDN no `index.html`
+- [X] Três componentes-base criados em `src/components/base/`: `BaseInput.vue`, `BaseButton.vue` e `FormCard.vue`
+- [X] `BaseInput.vue` implementado com `defineModel()` do Vue 3 para binding bidirecional nativo
+- [X] `BaseButton.vue` implementado com estados de `loading`, `disabled` e variantes da cor de marca (`#FF6622`)
+- [X] `FormCard.vue` criado com cabeçalho, slots de alertas, corpo e rodapé para unificação de layout
+- [X] As três telas refatoradas para usar `BaseInput` / `BaseButton` / `FormCard` (Registro, Login, Edição de Perfil)
+- [X] Tela de Registro agora visualmente consistente com Login/Perfil, utilizando a cor de marca `#FF6622` e eliminando débitos visuais
+- [X] Composable `src/composables/useAuth.js` criado centralizando o acesso ao estado de autenticação
+- [X] Guarda de navegação global (`src/router/index.js`) atualizado para usar `useAuth()`
+- [X] Navbar (`src/components/AppNavbar.vue`) atualizada para usar `useAuth()`
+- [X] Navbar revisada removendo links de funcionalidades não construídas, atendendo estritamente à regra da ADR-013
+- [X] Teste de Cadastro: confirmação do redirecionamento ao Login com a tela agora estilizada
+- [X] Teste de Login: confirmação do redirecionamento à tela principal
+- [X] Teste de Navbar: confirmação da alternância reativa correta entre estado logado e deslogado
+- [X] Teste de Edição de Perfil: confirmação dos três comportamentos da Aula 05 (dados reais, edição, upload) passando pelos componentes-base
+- [X] Teste do Guarda de Rota: deslogado tentando acessar tela protegida redireciona imediatamente ao Login
+- [X] Console do DevTools sem nenhum erro novo durante os testes
+
+---
+
+## ATIVIDADE 7 — PARTE A: Backend (Model, Associação e Upload da Entidade Principal)
+
+- [X] Pasta de upload da entidade principal criada (`public/uploads/photos/`)
+- [X] Constantes `TITLE_MAX: 100` e `DESCRIPTION_MAX: 500` adicionadas ao objeto `VALIDATION` em `config/constants.js`
+- [X] Model `Photo` criado em `modules/photo/photoModel.js` com campos apropriados ao Grupo B (`title`, `description`, `imageUrl`, `userId`, `viewsCount`, `likesCount`)
+- [X] Arquivo `config/associations.js` criado centralizando os relacionamentos `User.hasMany(Photo)` e `Photo.belongsTo(User)` para evitar referências circulares
+- [X] Middleware `middlewares/photoMulter.js` implementado com diskStorage, filtro MIME (JPG, PNG, WEBP) e limite de 10MB
+- [X] Validador `createPhotoValidator` criado em `modules/photo/photoValidator.js` com validações de campos e verificação de `req.file`
+- [X] Camada de serviço `modules/photo/photoService.js` implementada com persistência e incremento atômico de `user.photosCount`
+- [X] Controlador `modules/photo/photoController.js` implementado com respostas padronizadas `res.success()`
+- [X] Rotas `modules/photo/photoRoutes.js` criadas com ordem estrita de middlewares: `isAuthenticated` → `multer` → `validator` → `controller`
+- [X] Roteador montado em `server.js` via `app.use('/api', photoRoutes)`
+- [X] Associações carregadas em `server.js` antes da invocação de `sequelize.sync()`
+- [X] Tabela `photos` mapeada com chave estrangeira vinculada à tabela `users`
+- [X] Upload de foto funcional e coluna de contagem `photosCount` incrementada
+- [X] Casos de erro validados com os status esperados (401 sem auth, 400 sem imagem, 400 título inválido, 400 formato proibido)
+
+---
+
+## ATIVIDADE 7 — PARTE B: Frontend (Formulário, Progresso e Alcançabilidade)
+
+- [X] Camada de serviço `src/services/photoService.js` criada com `uploadPhoto()` recebendo `onUploadProgress` como parâmetro
+- [X] Classes utilitárias `.progress-bar-brand` e `.thumbnail-preview` adicionadas em `src/assets/main.css`
+- [X] Formulário completo construído em `src/views/UploadView.vue` com `FormCard`, `BaseInput` e `BaseButton`
+- [X] Prévia instantânea de imagem client-side implementada via `URL.createObjectURL(file)` com zero chamadas de rede
+- [X] Barra de progresso reativa conectada ao progresso real do Axios e exibida durante o envio
+- [X] Botão/link "Publicar Foto" adicionado à Navbar (`AppNavbar.vue`), visível exclusivamente para usuários autenticados
+- [X] Resposta formal ao checklist de alcançabilidade redigida em `alcancabilidade.md`
+- [X] Ficha de preparação atualizada com a Seção 2 preenchida (Grupo B, `Photo`, `photos`, `image`, `photosCount`)
+- [X] Teste de alcançabilidade: clique em "Publicar Foto" na Navbar altera a URL para `/upload` sem recarregar a página (SPA)
+- [X] Teste de validação: tentativa de envio com campos vazios impede o disparo e exibe erros nos campos correspondentes
+- [X] Teste de prévia: seleção de imagem exibe o thumbnail e botão de remoção instantaneamente
+- [X] Teste de envio: barra de progresso visual avança na tela e exibe mensagem de sucesso
+- [X] Inspeção na aba Network do DevTools confirmando cabeçalho `Content-Type: multipart/form-data; boundary=...`

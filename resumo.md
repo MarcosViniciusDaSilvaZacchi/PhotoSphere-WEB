@@ -1306,6 +1306,492 @@ No serviço `userService.updateUserProfile`, ao receber um novo arquivo:
 - **Prévia Local:** Atualiza a imagem de avatar via `URL.createObjectURL` imediatamente após a seleção do arquivo.
 - **Sincronização:** Após o sucesso da submissão `PUT`, os novos dados são atualizados no Pinia Store e no `localStorage`.
 
+---
 
+# Resumo — Atividade 6: Checkpoint 1 — Componentização, useAuth() e Acerto de Contas Visual
 
+**Disciplina:** Programação Web (FrontEnd)  
+**Projeto:** PhotoSphere (#15) — Plataforma de Compartilhamento de Fotos  
+**Aluno:** Marcos Vinicius da Silva Zacchi  
+
+---
+
+## 26. Contexto e Objetivos da Atividade 6
+
+Ao longo das cinco primeiras aulas, o PhotoSphere cresceu de forma acelerada com a implementação de infraestrutura, rotas de busca, persistência relacional com Sequelize/MySQL, autenticação JWT com Pinia e upload multipart com Multer. No entanto, esse ritmo acumulou alguns débitos técnicos e visuais planejados — como a tela de registro, que permaneceu sem a identidade visual do Bootstrap e com estilos azuis improvisados desde a Aula 03.
+
+A **Atividade 06** representa o **Checkpoint 1** do projeto e estabelece dois grandes objetivos:
+1. **No Back-end:** Realizar uma auditoria formal de conformidade arquitetural (sem adicionar nenhuma linha de código novo), garantindo que as camadas **Route → Controller → Service → Model** permaneceram puras e isoladas.
+2. **No Front-end:** Estabelecer um **Design System de componentes-base reutilizáveis** (`src/components/base/`), criar o composable `useAuth()` para desacoplar a lógica de autenticação dos componentes e unificar visualmente todas as telas de formulário do sistema sob a paleta monocromática oficial do PhotoSphere (`#FF6622` / Golden Hour).
+
+---
+
+## 27. Parte A — Backend: Checkpoint de Consistência (Sem Código Novo)
+
+Um dos princípios mais importantes da engenharia de software é a **disciplina arquitetural**. Sem paradas planejadas para auditoria, aplicações web rapidamente degradam em códigos espaguete, onde controladores executam queries SQL diretamente ou serviços manipulam objetos de resposta HTTP (`req`/`res`).
+
+A auditoria da API (`photosphere-api`) foi documentada formalmente no arquivo `checkpoint-01.md`, respondendo e justificando os 8 critérios fundamentais:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       FLUXO UNIDIRECIONAL DE CAMADAS                        │
+│                                                                             │
+│   HTTP Request                                                              │
+│        │                                                                    │
+│        ▼                                                                    │
+│   [ *Routes.js ]   ───► Apenas declara verbo, caminho, middlewares          │
+│        │                                                                    │
+│        ▼                                                                    │
+│   [ *Controller.js ] ──► Extrai req.body/params, chama Service, usa success()│
+│        │                                                                    │
+│        ▼                                                                    │
+│   [ *Service.js ]   ──► Regras de negócio puras (sem req/res)               │
+│        │                                                                    │
+│        ▼                                                                    │
+│   [ *Model.js ]     ──► Definição de tabelas, índices e tipos Sequelize     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Análise dos 8 Critérios de Consistência:
+
+1. **Rotas Puras (`*Routes.js`):**
+   - Nem `searchRoutes.js` nem `userRoutes.js` contêm regras de negócio ou lógica condicional.
+   - Limitam-se estritamente a associar métodos HTTP (`GET`, `POST`, `PUT`) a seus middlewares de validação/autenticação e à respectiva função do controlador.
+
+2. **Isolamento entre Controller e Model:**
+   - Nenhum controller consulta models do Sequelize diretamente.
+   - Toda interação com entidades de banco de dados passa obrigatoriamente por métodos de serviço (`userService.registerUser`, `userService.loginUser`, `userService.getUserProfile`, `userService.updateUserProfile`, `searchService.globalSearch`).
+
+3. **Independência de Protocolo nos Services:**
+   - Os serviços não recebem nem manipulam `req` ou `res`.
+   - Operam apenas com dados primitivos e objetos do domínio (strings, IDs, objetos puros), permitindo que sejam testados unitariamente de forma isolada sem necessidade de mocks complexos de requisições HTTP.
+
+4. **Padronização das Respostas (`apiResponse.js`):**
+   - Todas as respostas de sucesso utilizam o envelope unificado `res.success(message, data, statusCode)`.
+   - Erros de regras de negócio ou de autenticação disparam exceções (`throw error`) com status codes correspondentes, capturados globalmente pelo `errorHandler.js`.
+
+5. **Tratamento de Assincronia com `asyncHandler`:**
+   - Todas as rotas que acionam controladores assíncronos em `userRoutes.js` estão envolvidas pelo wrapper `asyncHandler(fn)`.
+   - Isso elimina qualquer possibilidade de *unhandled promise rejections*, encaminhando automaticamente qualquer erro para o pipeline do Express (`next(err)`).
+
+6. **Validação Declarativa (`express-validator`):**
+   - As entradas são validadas declarativamente em `modules/user/userValidator.js` (`registerValidator`, `loginValidator`, `profileUpdateValidator`).
+   - Não há verificações manuais de formato ou tamanho de dados espalhadas em controladores.
+
+7. **Centralização de Limites em `config/constants.js`:**
+   - As constantes `USERNAME_MIN: 3`, `USERNAME_MAX: 20`, `PASSWORD_MIN: 6` e `BIO_MAX: 255` residem centralizadas no arquivo de constantes, sendo consumidas pelos validadores da API e espelhadas na validação client-side.
+
+8. **Uso Estrito de Constantes de Domínio:**
+   - A constante `BIO_MAX` é utilizada exatamente uma vez no backend, na regra `isLength({ max: VALIDATION.BIO_MAX })` de `userValidator.js`, garantindo que não haja números mágicos (*magic numbers*) espalhados no código.
+
+---
+
+## 28. Fundamentos Teóricos de Engenharia de Software no Frontend
+
+### 28.1 Componente vs Composable: Qual a diferença fundamental?
+
+No ecossistema Vue 3, o reuso de código se divide em duas naturezas complementares:
+
+| Característica | Componente (`.vue`) | Composable (`.js`) |
+|---|---|---|
+| **Foco Principal** | **Apresentação e Estrutura Visual (UI)** | **Lógica de Estado e Regras de Negócio** |
+| **Conteúdo** | Possui `<template>`, `<style>` e `<script>` | Apenas código JavaScript/TypeScript puro |
+| **Exemplo no Projeto** | `BaseInput.vue`, `BaseButton.vue`, `FormCard.vue` | `useAuth.js` |
+| **Papel** | Renderiza elementos no DOM, trata eventos visuais e estilos | Gerencia estados reativos (`ref`, `computed`), armazena dados e fornece métodos |
+| **Analogia** | É o "chassi" e o "painel" do carro | É o "motor" e o "câmbio" do carro |
+
+- **Componente (`BaseInput`):** Preocupa-se em como o input deve ser desenhado na tela, aplicando classes CSS do Bootstrap, destacando bordas laranjas ao foco e exibindo a mensagem de erro no formato visual correto.
+- **Composable (`useAuth`):** Não se importa com CSS ou pixels. Preocupa-se apenas se o usuário está logado, qual é seu token, como disparar a função de login e como limpar os dados da sessão no logout.
+
+### 28.2 A Revolução do `defineModel()` no Vue 3.4+
+
+Antes do Vue 3.4, implementar um componente com suporte a `v-model` exigia uma "dança manual" repetitiva e verbosa de propriedades e eventos:
+
+```vue
+<!-- Abordagem Antiga (Vue 3.3 e anteriores) — Boilerplate excessivo -->
+<script setup>
+const props = defineProps(['modelValue'])
+const emit = defineEmits(['update:modelValue'])
+
+const value = computed({
+  get: () => props.modelValue,
+  set: (val) => emit('update:modelValue', val)
+})
+</script>
+<template>
+  <input :value="value" @input="value = $event.target.value" />
+</template>
+```
+
+Com o **`defineModel()`** (estabilizado a partir do Vue 3.4 e plenamente compatível com o Vue 3.5 do projeto), essa complexidade foi reduzida a uma única instrução declarativa:
+
+```vue
+<!-- Abordagem Moderna com defineModel() (Aula 06) -->
+<script setup>
+const model = defineModel()
+</script>
+<template>
+  <input v-model="model" />
+</template>
+```
+
+O `defineModel()` atua como uma macro de compilação que declara automaticamente a propriedade `modelValue`, o evento de disparo `update:modelValue` e uma `ref` bidirecional sincronizada, eliminando código repetitivo e prevenindo inconsistências de sincronização entre pai e filho.
+
+### 28.3 A Regra da ADR-013: Arquitetura Consciente de Navegação
+
+Na Aula 01, o projeto criou 16 views como placeholders em branco. Exibir links para essas rotas em construção cria uma falsa sensação de completude e degrada profundamente a experiência do usuário (UX).
+
+A decisão de arquitetura **ADR-013** estabelece:
+> *"Nenhum link deve ser adicionado à barra de navegação (Navbar ou Sidebar) antes que a funcionalidade que ele representa exista plenamente ou tenha uma aula futura claramente definida para sua implementação."*
+
+Por essa razão, na Atividade 06 a Navbar foi revisada para remover atalhos para páginas incompletas (`/explore`, `/feed`, `/albums`), mantendo apenas as rotas que entregam valor real:
+- **Público:** *Início* (`/`), *Entrar* (`/login`) e *Cadastrar* (`/register`).
+- **Autenticado:** *Início* (`/`), *Meu Perfil* (`/profile/me`), saudação personalizada e botão *Sair*.
+- *(O link de Upload será adicionado na Atividade 07, quando a funcionalidade for efetivamente construída).*
+
+---
+
+## 29. Parte B — Frontend: Construção do Design System Base
+
+### 29.1 Inclusão dos Ícones do Bootstrap
+No arquivo `photosphere-frontend/index.html`, adicionou-se a biblioteca de ícones via CDN oficial:
+```html
+<!-- Bootstrap Icons CDN (Aula 06) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+```
+
+### 29.2 `BaseInput.vue` (`src/components/base/BaseInput.vue`)
+Encapsula o elemento `<input>` e suas labels com estilização padronizada, suporte a erros e tema escuro:
+- Utiliza `defineModel()` para comunicação reativa transparente com formulários pais.
+- Props configuráveis: `id`, `label`, `type`, `placeholder`, `error`, `required`, `disabled`, `autocomplete`.
+- Estilização com a paleta `#FF6622` no foco (`:focus`) e suporte a classes de feedback (`is-invalid`).
+
+### 29.3 `BaseButton.vue` (`src/components/base/BaseButton.vue`)
+Padroniza todas as ações do sistema:
+- Suporta variantes de cores (`brand` para laranja sólido e `outline-brand` para contornos elegantes).
+- Propriedade booleana `loading`: desabilita o botão automaticamente e injeta um spinner Bootstrap (`spinner-border spinner-border-sm me-2`), garantindo feedback visual imediato ao usuário durante operações assíncronas.
+- Propriedade `fullWidth`: permite que o botão ocupe 100% da largura do formulário com um único parâmetro.
+
+### 29.4 `FormCard.vue` (`src/components/base/FormCard.vue`)
+Fornece um container unificado para os formulários de autenticação e gerenciamento:
+- Card centralizado com cantos arredondados (`border-radius: 16px`), fundo escuro (`#18141d`) e bordas com transparência sutil.
+- Sistema de slots modular:
+  - `#header`: Ícone de domínio (📸), título destacado e subtítulo amigável.
+  - `#alerts`: Espaço dedicado para mensagens de erro ou avisos informativos.
+  - `#default`: Corpo principal onde residem os campos do formulário.
+  - `#footer`: Rodapé com divisória para links secundários de navegação.
+
+---
+
+## 30. Composable `useAuth()` e Atualização de Roteamento
+
+### 30.1 Implementação do Composable (`src/composables/useAuth.js`)
+Para evitar que componentes visuais precisem importar diretamente a store do Pinia ou conheçam detalhes de baixo nível do gerenciamento de tokens, criou-se a camada de abstração `useAuth()`:
+
+```javascript
+import { computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+
+export function useAuth() {
+  const authStore = useAuthStore()
+
+  const user = computed(() => authStore.user)
+  const token = computed(() => authStore.token)
+  const isAuthenticated = computed(() => authStore.isAuthenticated)
+  const isAdmin = computed(() => authStore.isAdmin)
+
+  async function login(credentials) {
+    return await authStore.login(credentials)
+  }
+
+  async function logout() {
+    return await authStore.logout()
+  }
+
+  return { user, token, isAuthenticated, isAdmin, login, logout }
+}
+```
+
+### 30.2 Atualização do Navigation Guard (`src/router/index.js`)
+O guard global de navegação passou a utilizar o composable `useAuth()` para verificar permissões de acesso:
+
+```javascript
+import { useAuth } from '@/composables/useAuth'
+
+router.beforeEach((to, from, next) => {
+  const { isAuthenticated } = useAuth()
+
+  if (to.meta.requiresAuth && !isAuthenticated.value) {
+    // Redireciona usuário deslogado preservando a rota de destino
+    next({
+      name: 'login',
+      query: { redirect: to.fullPath },
+    })
+  } else {
+    next()
+  }
+})
+```
+
+---
+
+## 31. Refatoração dos Formulários e Consistência Estética
+
+Com os componentes-base finalizados, os três formulários existentes na aplicação foram refatorados:
+
+### 31.1 `RegisterView.vue` (O Grande Acerto de Contas Visual)
+- **Antes da Aula 06:** Possuía classes CSS manuais e botões azuis genéricos (`#4361ee`), sem alinhamento com o Bootstrap ou com a cor de marca da aplicação.
+- **Depois da Aula 06:** Reescrita inteiramente com `FormCard`, cinco instâncias de `BaseInput` (Nome Completo, Usuário, E-mail, Senha e Confirmação de Senha) e `BaseButton` laranja (`#FF6622`). O resultado visual atingiu paridade estética absoluta com as demais telas do PhotoSphere.
+
+### 31.2 `LoginView.vue`
+- Refatorado para utilizar `FormCard`, `BaseInput` e `BaseButton`.
+- O login agora consome `useAuth()` em vez de manipular a store diretamente.
+- O alerta informativo de redirecionamento protegido (`?redirect=...`) e alertas de erro foram encapsulados no slot `#alerts`.
+
+### 31.3 `MyProfileView.vue`
+- O campo de Nome Completo foi convertido para `BaseInput`.
+- O botão de envio foi convertido para `BaseButton` com suporte nativo a `loading` durante a submissão do `multipart/form-data`.
+- A visualização em tempo real de avatar e o contador de bio (`BIO_MAX: 255`) continuam operando de forma íntegra.
+
+---
+
+## 32. Validação, Testes e Evidências Práticas (E6)
+
+A homologação da Atividade 06 foi executada através de testes manuais e de integração com a interface:
+
+1. **Validação de Registro:**
+   - Tentativa de envio com dados incompletos dispara mensagens de erro reativas em cada `BaseInput`.
+   - Cadastro bem-sucedido redireciona para a tela de Login.
+
+2. **Navegação Protegida e Redirecionamento:**
+   - Tentativa de acessar diretamente `http://localhost:5173/profile/me` sem estar autenticado intercepta a navegação e encaminha para `http://localhost:5173/login?redirect=/profile/me`, exibindo o alerta de rota restrita.
+
+3. **Reatividade da Navbar:**
+   - No estado deslogado: exibe *"Início"*, *"Entrar"* e *"Cadastrar"*.
+   - Ao efetuar login com credenciais válidas: a Navbar reage instantaneamente, ocultando links públicos e exibindo *"Meu Perfil"*, a saudação *"Olá, markv"* e o botão *"Sair"*.
+
+4. **Persistência de Sessão e Componentização no Perfil:**
+   - A tela de Perfil carrega os dados reais do usuário autenticado e mantém o formulário sincronizado via `BaseInput` e `BaseButton`.
+
+### Evidências Geradas para a Entrega:
+- **`checkpoint-01.md`:** Documento de auditoria de consistência das camadas da API.
+- **`registro-antes.jpg`:** Registro no estado anterior sem estilização padronizada.
+- **`registro-depois.jpg`:** Registro com `FormCard` e identidade visual `#FF6622`.
+- **`tres-telas-consistentes.jpg`:** Composição lado a lado das três telas (Registro, Login e Perfil) comprovando consistência total.
+- **`navbar-reacao.jpg`:** Comparativo da barra de navegação no estado visitante vs autenticado.
+- **`checklists.md`:** Checklist completo da disciplina atualizado com todos os itens da E6 concluídos.
+---
+
+# Resumo — Atividade 7: Upload e Associação da Entidade Principal
+
+**Disciplina:** Programação Web (FrontEnd)  
+**Projeto:** PhotoSphere — Plataforma de Compartilhamento de Fotos (#15)  
+**Aluno:** Marcos Vinicius da Silva Zacchi (Mark V)  
+
+---
+
+## 33. Contexto, Grupo Temático e Regras de Negócio da Aula 07
+
+A Atividade 07 representa o ápice da integração operacional do PhotoSphere: a transição de um sistema focado exclusivamente em identidade de usuários para uma plataforma funcional de compartilhamento de conteúdo.
+
+### 33.1 Definição do Grupo Temático: Grupo B
+Na especificação da disciplina, os projetos foram categorizados em perfis de upload. O PhotoSphere (#15) enquadra-se estritamente no **Grupo B**:
+- **Natureza da Mídia:** Mídia única por registro (uma imagem por publicação).
+- **Entidade Principal:** `Photo` (tabela `photos`).
+- **Campo de Arquivo:** `image`.
+- **Coluna de Contagem:** `photosCount` na tabela `users` (criada no setup da Aula 03 e incrementada nesta atividade).
+
+### 33.2 Documentação Obrigatória: Ficha de Preparação
+Antes da escrita de qualquer linha de código, o processo pedagógico exigiu o preenchimento da **Ficha de Preparação (Seção 2)** em `fichaDePreparacao.md`:
+- Confirmação do grupo temático (Grupo B).
+- Definição formal do nome da entidade (`Photo`).
+- Definição da tabela no banco relacional (`photos`).
+- Definição do atributo que recebe o upload no formulário (`image`).
+- Vinculação com o usuário autor através da chave estrangeira `userId`.
+- Definição da coluna contadora a ser incrementada: `photosCount`.
+
+---
+
+## 34. Arquitetura e Modelagem do Back-End (Sequelize & Relacionamentos)
+
+### 34.1 Criação do Modelo `Photo` (`modules/photo/photoModel.js`)
+O modelo da entidade principal foi estruturado utilizando o Sequelize com mapeamento rigoroso de tipos e restrições:
+- `id`: Inteiro, chave primária com auto-incremento.
+- `title`: String de até 100 caracteres (`TITLE_MAX: 100`), obrigatório.
+- `description`: Texto de até 500 caracteres (`DESCRIPTION_MAX: 500`), opcional.
+- `imageUrl`: String armazenando o nome do arquivo gerado pelo Multer no disco (`photo-<timestamp>-<hash>.jpg`), obrigatório.
+- `userId`: Inteiro, chave estrangeira referenciando a tabela `users`.
+- `viewsCount` e `likesCount`: Inteiros iniciando em zero para métricas de engajamento.
+- `timestamps: true`: Gestão automática de `createdAt` e `updatedAt`.
+
+### 34.2 Centralização de Associações (`config/associations.js`)
+Para evitar problemas clássicos de importação circular em Node.js (onde o modelo `User` tenta importar `Photo` e `Photo` tenta importar `User` simultaneamente), foi criado o módulo isolado de associações:
+
+```javascript
+const User = require('../modules/user/userModel');
+const Photo = require('../modules/photo/photoModel');
+
+// Um usuário possui muitas fotos
+User.hasMany(Photo, {
+  foreignKey: 'userId',
+  as: 'photos',
+  onDelete: 'CASCADE',
+});
+
+// Uma foto pertence a um usuário
+Photo.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'author',
+});
+
+module.exports = { User, Photo };
+```
+
+Esse arquivo é importado em `server.js` imediatamente antes da chamada de `sequelize.sync({ alter: true })`, garantindo que as chaves estrangeiras e relacionamentos estejam perfeitamente configurados na inicialização do servidor.
+
+---
+
+## 35. Processamento de Upload com Multer (`middlewares/photoMulter.js`)
+
+O envio da entidade principal demanda um middleware especializado para processar o formato binário `multipart/form-data`.
+
+### 35.1 Configuração de Armazenamento em Disco (`diskStorage`)
+- **Diretório de Destino:** `public/uploads/photos/`.
+- **Nomenclatura Única:** `photo-<timestamp>-<random>.extensão`. Evita colisões de arquivos com o mesmo nome e sanitiza caracteres especiais.
+
+### 35.2 Filtro de Formatos (MIME Types)
+Apenas imagens válidas são aceitas:
+- `image/jpeg` (.jpg, .jpeg)
+- `image/png` (.png)
+- `image/webp` (.webp)
+Se o cliente enviar arquivos de outros tipos (como `.txt`, `.pdf` ou executáveis), o filtro rejeita a requisição imediatamente com código `400 Bad Request`.
+
+### 35.3 Limite de Tamanho
+- Tamanho máximo permitido configurado para **10 MB** (`10 * 1024 * 1024 bytes`).
+
+### 35.4 Ordem Canônica do Pipeline de Middlewares
+A rota `POST /api/photos` foi montada em `photoRoutes.js` obedecendo à ordem lógica de execução:
+1. `isAuthenticated`: Garante que a requisição possui um JWT válido no header `Authorization` e injeta `req.user`.
+2. `uploadPhoto.single('image')`: Extrai e grava o arquivo de mídia no disco, populando `req.file` e `req.body`.
+3. `createPhotoValidator`: Valida a presença de `req.file` e os dados textuais (`title`, `description`).
+4. `photoController.createPhoto`: Invoca a regra de negócio e responde com `201 Created`.
+
+---
+
+## 36. Regras de Negócio e Incremento Atômico (`modules/photo/photoService.js`)
+
+Na camada de serviço, a publicação de uma foto não se limita a salvar um registro: ela precisa manter a consistência com o perfil do autor.
+
+### 36.1 Incremento Atômico do Contador
+A coluna `photosCount` na tabela `users` é atualizada utilizando a operação de incremento do próprio banco de dados:
+
+```javascript
+await User.increment('photosCount', {
+  by: 1,
+  where: { id: userId },
+});
+```
+
+*Por que operação atômica?* Realizar a leitura da contagem, somar 1 em memória JavaScript e salvar de volta geraria condições de corrida (*race conditions*) caso o usuário realizasse uploads simultâneos. O comando `increment` traduz-se diretamente para a instrução SQL `UPDATE users SET photos_count = photos_count + 1 WHERE id = ?`, garantindo atomicidade nativa.
+
+### 36.2 Resposta Enriquecida (Eager Loading)
+Após a criação, a foto é retornada incluindo as informações públicas essenciais do seu autor (`id`, `username`, `fullName`, `profilePicture`), facilitando o consumo imediato pela interface sem a necessidade de uma segunda requisição.
+
+---
+
+## 37. Frontend: Camada de Serviço e Monitoramento de Progresso
+
+### 37.1 Implementação de `photoService.js`
+A comunicação do frontend com o endpoint de fotos foi isolada em `src/services/photoService.js`:
+
+```javascript
+import api from './api';
+
+export const photoService = {
+  async uploadPhoto(formData, onUploadProgress) {
+    const response = await api.post('/photos', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress,
+    });
+    return response.data;
+  },
+  
+  async listPhotos(params = {}) {
+    const response = await api.get('/photos', { params });
+    return response.data;
+  },
+};
+```
+
+### 37.2 O Gancho `onUploadProgress`
+O Axios disponibiliza o hook nativo de progresso do navegador via XMLHttpRequest. A função de callback recebe o evento com `loaded` (bytes transmitidos até o momento) e `total` (tamanho total do payload). O cálculo do percentual é derivado de forma reativa:
+$$\text{Percentual} = \text{round}\left(\frac{\text{loaded} \times 100}{\text{total}}\right)$$
+
+---
+
+## 38. Interface de Publicação (`UploadView.vue`) e Experiência do Usuário
+
+A tela de upload foi desenhada seguindo fielmente o Design System estabelecido na Aula 06:
+- Estruturada sobre o componente `FormCard` com título explicativo e ícone de upload.
+- Campo de título utilizando `BaseInput` com validação de preenchimento obrigatório e feedback de erro em tempo real.
+- Campo de descrição com contador de caracteres (`DESCRIPTION_MAX: 500`).
+
+### 38.1 Prévia Instantânea Client-Side (`URL.createObjectURL`)
+Uma das principais inovações técnicas da Aula 07 foi a implementação do preview instantâneo:
+- Quando o usuário seleciona um arquivo no input `<input type="file">`, o código executa `URL.createObjectURL(file)`.
+- Esse método cria um ponteiro local na memória do navegador apontando diretamente para o arquivo selecionado, gerando uma URL temporária (ex: `blob:http://localhost:5173/uuid`).
+- A imagem aparece na tela em milissegundos, com **zero requisições de rede** para o servidor.
+- Ao trocar ou remover o arquivo, o ponteiro de memória é liberado com `URL.revokeObjectURL()`, prevenindo vazamentos de memória (*memory leaks*).
+
+### 38.2 Barra de Progresso Visual (.progress-bar-brand)
+Durante o envio:
+- A barra de progresso torna-se visível imediatamente abaixo do seletor de arquivos.
+- A largura da barra anima-se de 0% a 100% acompanhando os eventos de upload.
+- O botão de submissão entra no estado `loading`, bloqueando novos disparos e exibindo um spinner indicador.
+
+---
+
+## 39. Alcançabilidade, ADR-013 e Proteção de Rota
+
+### 39.1 A Regra de Ouro da ADR-013
+A ADR-013 estabelece que **nenhum elemento visual navegável deve existir na interface a menos que a rota de destino e a funcionalidade correspondente estejam completamente implementadas**.
+- Na Aula 06, botões prematuros de upload e exploração foram removidos da barra de navegação para cumprir a ADR-013.
+- Na Aula 07, com o módulo de upload concluído no back-end e no front-end, o link **"Publicar Foto"** foi devidamente reintroduzido na `AppNavbar.vue`.
+
+### 39.2 Visibilidade Condicional e Segurança
+- O link exibe-se com `v-if="isAuthenticated"`, ficando totalmente invisível para visitantes deslogados.
+- A rota `/upload` é protegida no Vue Router com `meta: { requiresAuth: true }`.
+- Se um visitante digitar manualmente `http://localhost:5173/upload` na barra de endereços, o Navigation Guard intercepta a tentativa e redireciona para a tela de login com o parâmetro de retorno `?redirect=/upload`.
+
+---
+
+## 40. Homologação, Bateria de Testes e Entregáveis Finais (E7)
+
+### 40.1 Matriz de Testes da API (cURL)
+A API foi submetida a cinco cenários de teste documentados visualmente:
+1. **Erro 1 (401 Unauthorized):** Envio para `/api/photos` sem cabeçalho `Authorization`. Resultado: `401` com mensagem *"Acesso não autorizado"*.
+2. **Erro 2 (400 Bad Request):** Envio autenticado com título válido, mas sem o arquivo de imagem no corpo da requisição. Resultado: `400` com mensagem *"O campo 'image' é obrigatório"*.
+3. **Erro 3 (400 Bad Request):** Envio com arquivo de texto (`.txt`) em vez de imagem. Resultado: `400` com mensagem *"Formato de arquivo inválido"*.
+4. **Erro 4 (400 Bad Request):** Envio de imagem válida, porém com o campo de título vazio. Resultado: `400` com mensagem *"O título da foto é obrigatório"*.
+5. **Sucesso (201 Created):** Envio com JWT válido, título *"Pôr do Sol Dourado"*, descrição e arquivo JPEG. Resultado: `201` com dados da foto e contador `photosCount: 1`.
+
+### 40.2 Artefatos Entregues
+Todos os artefatos exigidos pelo enunciado foram compilados e espelhados nas pastas `E7/` e `photosphere-frontend/01 - Docs/atividade07/`:
+- `fichaDePreparacao.md`: Seção 2 preenchida formalmente com a especificação do Grupo B.
+- `alcancabilidade.md`: Respostas ao questionário de alcançabilidade e conformidade com a ADR-013.
+- `checklists.md`: Matriz de conformidade da disciplina com 100% dos requisitos marcados como concluídos.
+- Imagens de teste:
+  - `teste-curl-erro-1.jpg` a `teste-curl-erro-4.jpg`
+  - `teste-curl-sucesso.jpg`
+  - `formulario-preenchido.jpg`
+  - `progresso-upload.jpg`
+  - `upload-multipart.jpg`
+  - `link-envio.jpg`
+- Pacotes de código-fonte compactados e livres de `node_modules` e `.env`:
+  - `MarcosViniciusDaSilvaZacchi-PhotoSphere-backend.zip`
+  - `MarcosViniciusDaSilvaZacchi-PhotoSphere-frontend.zip`
+
+---
 

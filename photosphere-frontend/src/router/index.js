@@ -127,13 +127,13 @@ const router = createRouter({
 })
 
 // ── Guarda de Navegação Global (Navigation Guard) ───────────────────────────
-// Importante: useAuthStore() DEVE ser chamado dentro do callback, nunca no topo do arquivo!
-import { useAuthStore } from '@/stores/auth'
+// Atualizado na Aula 06 para utilizar o composable useAuth()
+import { useAuth } from '@/composables/useAuth'
 
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore()
+  const { isAuthenticated } = useAuth()
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (to.meta.requiresAuth && !isAuthenticated.value) {
     // Usuário deslogado tentando acessar rota protegida: redireciona ao Login
     next({
       name: 'login',

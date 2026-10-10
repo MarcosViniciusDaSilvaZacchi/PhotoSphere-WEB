@@ -1,12 +1,12 @@
 <script setup>
 import { RouterLink, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
-const authStore = useAuthStore()
+const { isAuthenticated, user, logout } = useAuth()
 
 async function handleLogout() {
-  await authStore.logout()
+  await logout()
   router.push({ name: 'login' })
 }
 </script>
@@ -20,27 +20,30 @@ async function handleLogout() {
       </RouterLink>
     </div>
 
+    <!-- Navegação central: apenas rotas funcionais reais (ADR-013) -->
     <nav class="navbar__links">
-      <RouterLink to="/explore">Explorar</RouterLink>
-      <!-- Links de usuário autenticado -->
-      <template v-if="authStore.isAuthenticated">
-        <RouterLink to="/feed">Feed</RouterLink>
-        <RouterLink to="/upload">Upload</RouterLink>
-        <RouterLink to="/albums">Álbuns</RouterLink>
-      </template>
+      <RouterLink to="/">Início</RouterLink>
+      <!-- Link da Aula 07: Publicar Foto (visível apenas para usuários autenticados) -->
+      <RouterLink v-if="isAuthenticated" to="/upload" class="nav-upload-link">
+        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Publicar Foto
+      </RouterLink>
     </nav>
 
     <div class="navbar__auth">
       <!-- Se logado: exibe Meu Perfil, saudação e botão Sair -->
-      <template v-if="authStore.isAuthenticated">
-        <RouterLink to="/profile/me" class="btn-profile-link">Meu Perfil</RouterLink>
-        <span class="user-greeting">Olá, <strong>{{ authStore.user?.username }}</strong></span>
-        <button @click="handleLogout" class="btn-logout">Sair</button>
+      <template v-if="isAuthenticated">
+        <RouterLink to="/profile/me" class="btn-profile-link">
+          <i class="bi bi-person-circle me-1"></i> Meu Perfil
+        </RouterLink>
+        <span class="user-greeting">Olá, <strong>{{ user?.username }}</strong></span>
+        <button @click="handleLogout" class="btn-logout">
+          <i class="bi bi-box-arrow-right me-1"></i> Sair
+        </button>
       </template>
 
       <!-- Se deslogado: exibe Entrar e Cadastrar -->
       <template v-else>
-        <RouterLink to="/login">Entrar</RouterLink>
+        <RouterLink to="/login" class="nav-login-link">Entrar</RouterLink>
         <RouterLink to="/register" class="btn-register-link">Cadastrar</RouterLink>
       </template>
     </div>
@@ -152,5 +155,24 @@ async function handleLogout() {
 
 .btn-register-link:hover {
   background-color: #E74800 !important;
+}
+
+.nav-upload-link {
+  color: #fff !important;
+  background-color: rgba(255, 102, 34, 0.15);
+  border: 1px solid #FF6622;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-upload-link:hover,
+.nav-upload-link.router-link-active {
+  background-color: #FF6622 !important;
+  color: #fff !important;
+  box-shadow: 0 0 12px rgba(255, 102, 34, 0.4);
 }
 </style>

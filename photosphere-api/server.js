@@ -11,8 +11,10 @@ const apiResponse = require('./middlewares/apiResponse');
 const routes = require('./routes');
 const searchRoutes = require('./modules/search/searchRoutes'); // E2: módulo de busca
 const userRoutes = require('./modules/user/userRoutes');       // E3: módulo de usuários
+const photoRoutes = require('./modules/photo/photoRoutes');     // E7: módulo da entidade principal (Photo)
 const errorHandler = require('./middlewares/errorHandler');   // E3: tratamento global de erros
 const sequelize = require('./config/database');               // E3: conexão MySQL
+require('./config/associations');                             // E7: relacionamentos carregados antes do sync
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,6 +48,9 @@ app.use('/api', searchRoutes);
 
 // Módulo de usuários: POST /api/register, GET /api/profile/:username
 app.use('/api', userRoutes);
+
+// Módulo de fotos (E7): POST /api/photos, GET /api/photos
+app.use('/api', photoRoutes);
 
 // Rota 404 — qualquer endereço não mapeado cai aqui
 app.use((req, res) => {

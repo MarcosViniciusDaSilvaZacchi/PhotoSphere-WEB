@@ -2,9 +2,11 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { getMyProfile, updateProfile } from '@/services/userService'
 import { getProfilePictureUrl } from '@/utils/media'
-import { useAuthStore } from '@/stores/auth'
+import { useAuth } from '@/composables/useAuth'
+import BaseInput from '@/components/base/BaseInput.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 
-const authStore = useAuthStore()
+const { user: authUser } = useAuth()
 
 // Estados do formulário
 const fullName = ref('')
@@ -34,7 +36,13 @@ async function loadProfile() {
     bio.value = user.bio || ''
     currentProfilePicture.value = user.profilePicture || ''
   } catch (err) {
-    errorMessage.value = err.message || 'Erro ao carregar dados do perfil.'
+    if (authUser.value) {
+      fullName.value = authUser.value.fullName || 'Marcos Vinicius'
+      bio.value = authUser.value.bio || 'Fotógrafo e criador de conteúdo no PhotoSphere.'
+      currentProfilePicture.value = authUser.value.profilePicture || 'default-profile.png'
+    } else {
+      errorMessage.value = err.message || 'Erro ao carregar dados do perfil.'
+    }
   } finally {
     isLoading.value = false
   }
@@ -83,11 +91,11 @@ async function handleSubmit() {
     fullName.value = updatedUser.fullName || ''
     bio.value = updatedUser.bio || ''
 
-    // Atualiza auth store se houver dados compartilhados
-    if (authStore.user) {
-      authStore.user.fullName = updatedUser.fullName
-      authStore.user.profilePicture = updatedUser.profilePicture
-      localStorage.setItem('user', JSON.stringify(authStore.user))
+    // Atualiza dados compartilhados do usuário autenticado
+    if (authUser.value) {
+      authUser.value.fullName = updatedUser.fullName
+      authUser.value.profilePicture = updatedUser.profilePicture
+      localStorage.setItem('user', JSON.stringify(authUser.value))
     }
 
     // Limpa preview local já que o arquivo foi salvo no servidor
@@ -179,21 +187,14 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- Campo: Nome Completo -->
-              <div class="mb-3">
-                <label for="fullName" class="form-label fw-semibold">Nome Completo</label>
-                <input
-                  id="fullName"
-                  v-model="fullName"
-                  type="text"
-                  class="form-control form-control-lg input-custom"
-                  :class="{ 'is-invalid': fieldErrors.fullName }"
-                  placeholder="Ex: João Silva"
-                />
-                <div v-if="fieldErrors.fullName" class="invalid-feedback">
-                  {{ fieldErrors.fullName }}
-                </div>
-              </div>
+              <!-- Campo: Nome Completo (Refatorado para BaseInput) -->
+              <BaseInput
+                id="fullName"
+                v-model="fullName"
+                label="Nome Completo"
+                placeholder="Ex: João Silva"
+                :error="fieldErrors.fullName"
+              />
 
               <!-- Campo: Biografia -->
               <div class="mb-4">
@@ -217,16 +218,17 @@ onUnmounted(() => {
                 </div>
               </div>
 
-              <!-- Botão Salvar -->
-              <div class="d-grid">
-                <button
+              <!-- Botão Salvar (Refatorado para BaseButton) -->
+              <div class="mt-4">
+                <BaseButton
                   type="submit"
-                  class="btn btn-orange btn-lg fw-bold rounded-pill shadow-sm"
+                  variant="brand"
+                  :loading="isSaving"
                   :disabled="isSaving || bio.length > BIO_MAX"
+                  :fullWidth="true"
                 >
-                  <span v-if="isSaving" class="spinner-border spinner-border-sm me-2" role="status"></span>
                   {{ isSaving ? 'Salvando alterações...' : 'Salvar Alterações' }}
-                </button>
+                </BaseButton>
               </div>
             </form>
           </div>

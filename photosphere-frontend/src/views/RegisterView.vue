@@ -1,7 +1,18 @@
 <script setup>
+/**
+ * RegisterView.vue — Tela de Registro de Usuários.
+ *
+ * Refatorada na Aula 06 para utilizar os componentes-base:
+ * FormCard, BaseInput e BaseButton, alinhando a interface com a identidade
+ * visual do PhotoSphere (#FF6622) e eliminando pendências visuais da Aula 04.
+ */
+
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import { register } from '@/services/authService'
+import FormCard from '@/components/base/FormCard.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 
 const router = useRouter()
 
@@ -70,10 +81,10 @@ async function handleSubmit() {
       fullName: form.fullName.trim(),
     })
 
-    console.log('Conta criada:', response.data)
+    console.log('Conta criada com sucesso:', response.data)
     router.push({ name: 'login' })
   } catch (error) {
-    apiErrorMessage.value = error.message
+    apiErrorMessage.value = error.message || 'Erro ao criar conta.'
   } finally {
     isSubmitting.value = false
   }
@@ -81,207 +92,94 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="auth-page">
-    <div class="auth-card">
-      <h1>Criar Conta</h1>
-      <p class="auth-subtitle">Junte-se ao PhotoSphere para compartilhar suas fotos.</p>
+  <FormCard
+    title="Criar Conta no PhotoSphere"
+    subtitle="Junte-se à nossa comunidade de fotografia"
+    icon="📸"
+    maxWidth="500px"
+  >
+    <!-- Alertas -->
+    <template #alerts>
+      <div
+        v-if="apiErrorMessage"
+        class="alert alert-danger py-2 px-3 small border-0 mb-4 d-flex align-items-center"
+        role="alert"
+      >
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span>{{ apiErrorMessage }}</span>
+      </div>
+    </template>
 
-      <form @submit.prevent="handleSubmit" novalidate>
-        <div class="field">
-          <label for="fullName">Nome completo</label>
-          <input
-            id="fullName"
-            type="text"
-            v-model="form.fullName"
-            placeholder="Seu nome completo"
-            :class="{ 'input-error': errors.fullName }"
-          />
-          <span v-if="errors.fullName" class="error-message">{{ errors.fullName }}</span>
-        </div>
+    <!-- Formulário Refatorado com Componentes-Base -->
+    <form @submit.prevent="handleSubmit" novalidate>
+      <BaseInput
+        id="fullName"
+        v-model="form.fullName"
+        label="Nome Completo"
+        placeholder="Seu nome completo"
+        :error="errors.fullName"
+        required
+      />
 
-        <div class="field">
-          <label for="username">Usuário</label>
-          <input
-            id="username"
-            type="text"
-            v-model="form.username"
-            placeholder="ex: fotografo123"
-            :class="{ 'input-error': errors.username }"
-          />
-          <span v-if="errors.username" class="error-message">{{ errors.username }}</span>
-        </div>
+      <BaseInput
+        id="username"
+        v-model="form.username"
+        label="Nome de Usuário"
+        placeholder="ex: fotografo123"
+        :error="errors.username"
+        required
+      />
 
-        <div class="field">
-          <label for="email">E-mail</label>
-          <input
-            id="email"
-            type="email"
-            v-model="form.email"
-            placeholder="seu@email.com"
-            :class="{ 'input-error': errors.email }"
-          />
-          <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
-        </div>
+      <BaseInput
+        id="email"
+        v-model="form.email"
+        type="email"
+        label="E-mail"
+        placeholder="seu@email.com"
+        :error="errors.email"
+        required
+      />
 
-        <div class="field">
-          <label for="password">Senha</label>
-          <input
-            id="password"
-            type="password"
-            v-model="form.password"
-            placeholder="Pelo menos 6 caracteres"
-            :class="{ 'input-error': errors.password }"
-          />
-          <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
-        </div>
+      <BaseInput
+        id="password"
+        v-model="form.password"
+        type="password"
+        label="Senha"
+        placeholder="Mínimo 6 caracteres"
+        :error="errors.password"
+        required
+      />
 
-        <div class="field">
-          <label for="confirmPassword">Confirmar senha</label>
-          <input
-            id="confirmPassword"
-            type="password"
-            v-model="form.confirmPassword"
-            placeholder="Repita sua senha"
-            :class="{ 'input-error': errors.confirmPassword }"
-          />
-          <span v-if="errors.confirmPassword" class="error-message">{{ errors.confirmPassword }}</span>
-        </div>
+      <BaseInput
+        id="confirmPassword"
+        v-model="form.confirmPassword"
+        type="password"
+        label="Confirmar Senha"
+        placeholder="Repita sua senha"
+        :error="errors.confirmPassword"
+        required
+      />
 
-        <p v-if="apiErrorMessage" class="api-error">{{ apiErrorMessage }}</p>
+      <div class="mt-4">
+        <BaseButton
+          type="submit"
+          variant="brand"
+          :loading="isSubmitting"
+          :fullWidth="true"
+        >
+          {{ isSubmitting ? 'Criando conta...' : 'Cadastrar' }}
+        </BaseButton>
+      </div>
+    </form>
 
-        <button type="submit" :disabled="isSubmitting" class="btn-submit">
-          {{ isSubmitting ? 'Criando conta...' : 'Criar Minha Conta' }}
-        </button>
-      </form>
-
-      <p class="auth-footer">
-        Já tem uma conta? <RouterLink to="/login">Entrar</RouterLink>
+    <!-- Rodapé -->
+    <template #footer>
+      <p class="small text-secondary mb-0">
+        Já tem uma conta?
+        <RouterLink to="/login" class="text-brand fw-semibold text-decoration-none">
+          Faça login
+        </RouterLink>
       </p>
-    </div>
-  </div>
+    </template>
+  </FormCard>
 </template>
-
-<style scoped>
-.auth-page {
-  min-height: calc(100vh - 120px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
-  background-color: #0f0f1b;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 460px;
-  background-color: #1a1a2e;
-  padding: 2.5rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  color: #fff;
-}
-
-h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  color: #fff;
-  text-align: center;
-}
-
-.auth-subtitle {
-  color: #a0a0b0;
-  font-size: 0.95rem;
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1.25rem;
-}
-
-label {
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-bottom: 0.4rem;
-  color: #ddd;
-}
-
-input {
-  background-color: #252538;
-  border: 1px solid #3a3a50;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  color: #fff;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-input:focus {
-  border-color: #4361ee;
-}
-
-input.input-error {
-  border-color: #e63946;
-}
-
-.error-message {
-  color: #ff6b6b;
-  font-size: 0.82rem;
-  margin-top: 0.35rem;
-}
-
-.api-error {
-  background-color: rgba(230, 57, 70, 0.15);
-  border: 1px solid #e63946;
-  color: #ff6b6b;
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  margin-bottom: 1.25rem;
-  text-align: center;
-}
-
-.btn-submit {
-  width: 100%;
-  padding: 0.85rem;
-  background-color: #4361ee;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 0.5rem;
-}
-
-.btn-submit:hover:not(:disabled) {
-  background-color: #364fc7;
-}
-
-.btn-submit:disabled {
-  background-color: #555570;
-  cursor: not-allowed;
-}
-
-.auth-footer {
-  margin-top: 1.75rem;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #a0a0b0;
-}
-
-.auth-footer a {
-  color: #4cc9f0;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.auth-footer a:hover {
-  text-decoration: underline;
-}
-</style>
