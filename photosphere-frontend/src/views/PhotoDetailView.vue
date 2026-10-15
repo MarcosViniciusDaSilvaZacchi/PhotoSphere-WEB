@@ -8,12 +8,19 @@
  *    Esconder o botão é apenas USABILIDADE, não segurança: quem decide se a
  *    edição é permitida é a API (403 em GET /photos/:id/edit e PUT /photos/:id).
  *  - Rota pública: visitantes também veem o detalhe (a API usa optionalAuth).
+ *
+ * Aula 10:
+ *  - LikeButton (otimista) recebe isLiked e likesCount do detalhe.
+ *  - CommentSection lista e publica comentários; o contador acompanha.
  */
 
 import { ref, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { getPhotoById } from '@/services/photoService'
 import { getPhotoUrl, getProfilePictureUrl } from '@/utils/media'
+import { pluralize } from '@/utils/format'
+import LikeButton from '@/components/LikeButton.vue'
+import CommentSection from '@/components/CommentSection.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -51,6 +58,17 @@ watch(
   },
   { immediate: true }
 )
+
+// Mantém os números do painel coerentes com o que os componentes filhos fizeram
+function onLikeChange({ liked, likesCount }) {
+  if (!photo.value) return
+  photo.value.isLiked = liked
+  photo.value.likesCount = likesCount
+}
+
+function onCommentsCountChange(count) {
+  if (photo.value) photo.value.commentsCount = count
+}
 
 function goBack() {
   if (window.history.length > 1) router.back()
@@ -110,11 +128,28 @@ function goBack() {
         <p v-if="photo.description" class="info-panel__desc">{{ photo.description }}</p>
         <p v-else class="info-panel__desc fst-italic">Sem descrição informada.</p>
 
+        <!-- Interações (Aula 10) -->
+        <div class="info-panel__actions">
+          <LikeButton
+            :key="photo.id"
+            :photo-id="photo.id"
+            :liked="!!photo.isLiked"
+            :count="photo.likesCount || 0"
+            @change="onLikeChange"
+          />
+          <a href="#comments-title" class="ps-btn ps-btn--ghost">
+            <i class="bi bi-chat"></i> {{ photo.commentsCount || 0 }}
+          </a>
+        </div>
+
         <div class="info-panel__stats">
-          <span class="ps-chip"><i class="bi bi-eye"></i> {{ photo.viewsCount || 0 }} visualizações</span>
-          <span class="ps-chip"><i class="bi bi-heart"></i> {{ photo.likesCount || 0 }} curtidas</span>
+          <span class="ps-chip"><i class="bi bi-eye"></i> {{ pluralize(photo.viewsCount, 'visualização', 'visualizações') }}</span>
           <span class="ps-chip"><i class="bi bi-calendar3"></i> {{ new Date(photo.createdAt).toLocaleDateString('pt-BR') }}</span>
         </div>
+
+        <hr class="info-panel__divider" />
+
+        <CommentSection :key="`c-${photo.id}`" :photo-id="photo.id" @count-change="onCommentsCountChange" />
       </aside>
     </div>
   </div>
@@ -183,6 +218,8 @@ function goBack() {
 .info-panel__title { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.03em; margin: 1.25rem 0 0.5rem; }
 .info-panel__desc { color: var(--ps-muted); line-height: 1.6; white-space: pre-line; }
 .info-panel__stats { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+.info-panel__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 1.25rem; }
+.info-panel__divider { margin: 1.5rem 0 1.25rem; border-color: var(--ps-border); opacity: 1; }
 
 @media (max-width: 900px) {
   .detail-grid { grid-template-columns: 1fr; }

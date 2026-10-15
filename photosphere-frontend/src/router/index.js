@@ -16,6 +16,7 @@ import MyProfileView     from '@/views/profile/MyProfileView.vue'
 import PublicProfileView from '@/views/profile/PublicProfileView.vue'   // Aula 09
 import MyPhotosView      from '@/views/MyPhotosView.vue'                 // Aula 09
 import EditPhotoView     from '@/views/EditPhotoView.vue'                // Aula 09
+import LikedPhotosView   from '@/views/LikedPhotosView.vue'              // Aula 10
 import SettingsView      from '@/views/SettingsView.vue'
 
 // ── Rotas de Administrador ──────────────────────────────────────────────────
@@ -89,6 +90,12 @@ const router = createRouter({
       path: '/photo/:id/edit',   // Aula 09: edição, só o dono consegue salvar (a API garante)
       name: 'photo-edit',
       component: EditPhotoView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/liked',            // Aula 10: Fotos Curtidas (um clique pelo coração da Navbar)
+      name: 'liked-photos',
+      component: LikedPhotosView,
       meta: { requiresAuth: true },
     },
     {

@@ -4,10 +4,14 @@
  * Aula 07: criação (upload)
  * Aula 08: detalhe (optionalAuth + isOwner + visualizações) e feed paginado
  * Aula 09: CRUD do dono — listar as minhas, buscar para edição, editar e excluir
+ * Aula 10: isLiked no detalhe e exclusão em transação (curtidas + comentários)
  */
 
+const sequelize = require('../../config/database');
 const Photo = require('./photoModel');
 const User = require('../user/userModel');
+const Like = require('../like/likeModel');
+const Comment = require('../comment/commentModel');
 const { removeUpload } = require('../../utils/fileStorage');
 const { isDatabaseOffline } = require('../../utils/dbFallback');
 
@@ -163,6 +167,11 @@ async function getPhotoDetails(id, currentUserId = null) {
     const photoData = photo.toJSON();
     photoData.isOwner = currentUserId ? Number(photoData.userId) === Number(currentUserId) : false;
 
+    // Aula 10: o detalhe já informa se quem está vendo curtiu (visitante → false)
+    photoData.isLiked = currentUserId
+      ? !!(await Like.findOne({ where: { userId: currentUserId, photoId: photo.id }, attributes: ['id'] }))
+      : false;
+
     return photoData;
   } catch (dbError) {
     if (dbError.status === 404) throw dbError;
@@ -276,21 +285,31 @@ async function updatePhoto(id, userId, { title, description }, file) {
 }
 
 /**
- * DELETE /api/photos/:id — remove o registro, decrementa o contador do autor
- * e só então apaga o arquivo do disco.
+ * DELETE /api/photos/:id — remove o registro, as curtidas e os comentários,
+ * decrementa o contador do autor e só então apaga o arquivo do disco.
+ *
+ * Aula 10: as quatro escritas no banco rodam numa ÚNICA transação — se qualquer
+ * uma falhar, nada é apagado (não sobra foto sem curtidas, nem curtidas sem foto).
+ * O arquivo só é removido DEPOIS do commit: se a transação desfizesse tudo
+ * e o arquivo já tivesse sido apagado, a foto voltaria sem imagem.
  */
 async function deletePhoto(id, userId) {
-  const photo = await findOwnedPhotoOrFail(id, userId);
-  const imageToRemove = photo.imageUrl;
+  const imageToRemove = await sequelize.transaction(async (t) => {
+    const photo = await findOwnedPhotoOrFail(id, userId, { transaction: t });
 
-  // 1. Banco primeiro: registro e contador
-  await photo.destroy();
-  await User.decrement('photosCount', {
-    by: 1,
-    where: { id: userId },
+    await Like.destroy({ where: { photoId: photo.id }, transaction: t });
+    await Comment.destroy({ where: { photoId: photo.id }, transaction: t });
+    await photo.destroy({ transaction: t });
+    await User.decrement('photosCount', {
+      by: 1,
+      where: { id: userId },
+      transaction: t,
+    });
+
+    return photo.imageUrl;
   });
 
-  // 2. Disco depois
+  // Disco depois do commit
   await removeUpload('photos', imageToRemove);
 
   return { id: Number(id) };

@@ -8,6 +8,8 @@
  *  - ao escolher um item (closeMenu no @click de cada item);
  *  - com a tecla Esc;
  *  - ao trocar de rota (watch na rota, cobre o botão Voltar do navegador).
+ *
+ * Aula 10: atalho de UM clique para as Fotos Curtidas (coração), além do item no menu.
  */
 
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
@@ -73,6 +75,11 @@ async function handleLogout() {
 
       <div class="nav-actions">
         <template v-if="isAuthenticated">
+          <!-- Aula 10: Fotos Curtidas em um clique -->
+          <RouterLink to="/liked" class="icon-link" active-class="is-active" title="Fotos Curtidas" aria-label="Fotos Curtidas">
+            <i class="bi bi-heart"></i>
+          </RouterLink>
+
           <!-- Link da Aula 07: Publicar Foto -->
           <RouterLink to="/upload" class="ps-btn ps-btn--primary ps-btn--sm nav-upload">
             <i class="bi bi-plus-lg"></i><span>Publicar</span>
@@ -116,6 +123,9 @@ async function handleLogout() {
                 </RouterLink>
                 <RouterLink to="/my-photos" class="dropdown-ps__item" role="menuitem" @click="closeMenu">
                   <i class="bi bi-images"></i> Minhas Fotos
+                </RouterLink>
+                <RouterLink to="/liked" class="dropdown-ps__item" role="menuitem" @click="closeMenu">
+                  <i class="bi bi-heart"></i> Fotos Curtidas
                 </RouterLink>
 
                 <div class="dropdown-ps__divider"></div>
@@ -194,6 +204,22 @@ async function handleLogout() {
 .nav-link-ps.is-active i { color: var(--brand-color); }
 
 .nav-actions { display: flex; align-items: center; gap: 0.75rem; }
+
+/* ─── Atalho das curtidas (Aula 10) ─────────────────────────────────────── */
+.icon-link {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--ps-muted);
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: color 0.2s, background-color 0.2s;
+}
+.icon-link:hover { color: #ff4d67; background: var(--ps-surface-2); }
+.icon-link.is-active { color: #ff4d67; background: rgba(255, 77, 103, 0.12); }
+.icon-link.is-active i::before { content: '\f415'; } /* bi-heart-fill */
 
 /* ─── Avatar + dropdown ───────────────────────────────────────────────────── */
 .avatar-menu { position: relative; }

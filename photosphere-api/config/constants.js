@@ -12,5 +12,6 @@ module.exports = {
     BIO_MAX: 255,
     TITLE_MAX: 100,
     DESCRIPTION_MAX: 500,
+    COMMENT_MAX: 500, // Aula 10: limite do texto de um comentário
   },
 };

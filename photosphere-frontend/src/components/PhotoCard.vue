@@ -11,11 +11,15 @@
  *    no perfil de uma pessoa, repetir o nome dela em todo card seria ruído.
  *  - Slot "actions": quem usa o card decide quais botões aparecem (Meus Itens
  *    injeta Editar/Excluir; o Feed não injeta nada e continua igual).
+ *
+ * Aula 10: contadores de curtidas e comentários (vindos das colunas likesCount
+ * e commentsCount da API) ao lado das visualizações.
  */
 
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getPhotoUrl, getProfilePictureUrl } from '@/utils/media'
+import { formatCount } from '@/utils/format'
 
 const props = defineProps({
   photo: {
@@ -58,8 +62,11 @@ const authorRoute = computed(() =>
         </span>
 
         <div class="photo-card__stats">
-          <span title="Visualizações"><i class="bi bi-eye"></i>{{ photo.viewsCount || 0 }}</span>
-          <span title="Curtidas"><i class="bi bi-heart"></i>{{ photo.likesCount || 0 }}</span>
+          <span title="Visualizações"><i class="bi bi-eye"></i>{{ formatCount(photo.viewsCount) }}</span>
+          <span title="Curtidas" :class="{ 'is-liked': photo.isLiked }">
+            <i class="bi" :class="photo.isLiked ? 'bi-heart-fill' : 'bi-heart'"></i>{{ formatCount(photo.likesCount) }}
+          </span>
+          <span title="Comentários"><i class="bi bi-chat"></i>{{ formatCount(photo.commentsCount) }}</span>
         </div>
       </div>
 
@@ -178,6 +185,7 @@ const authorRoute = computed(() =>
 
 .photo-card__stats { display: flex; gap: 0.8rem; color: var(--ps-muted); font-size: 0.8rem; }
 .photo-card__stats span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.photo-card__stats .is-liked i { color: #ff4d67; }
 
 .photo-card__actions {
   display: flex;

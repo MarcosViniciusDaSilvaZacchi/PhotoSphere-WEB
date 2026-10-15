@@ -134,7 +134,8 @@ async function getPublicProfile(username, currentUserId = null) {
       {
         model: Photo,
         as: 'photos',
-        attributes: ['id', 'title', 'description', 'imageUrl', 'userId', 'viewsCount', 'likesCount', 'createdAt'],
+        // Aula 10: contadores de curtidas e comentários nos cards do perfil
+        attributes: ['id', 'title', 'description', 'imageUrl', 'userId', 'viewsCount', 'likesCount', 'commentsCount', 'createdAt'],
       },
     ],
     order: [[{ model: Photo, as: 'photos' }, 'createdAt', 'DESC'], [{ model: Photo, as: 'photos' }, 'id', 'DESC']],

@@ -3,6 +3,7 @@
  *
  * Pertence ao Grupo B (um único arquivo de mídia direta).
  * Cada foto possui um autor (userId) e alimenta a coluna de contagem 'photosCount' do usuário.
+ * Aula 10: likesCount e commentsCount são contadores guardados (atualizados em transação).
  */
 
 const { DataTypes } = require('sequelize');
@@ -40,8 +41,15 @@ const Photo = sequelize.define(
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
+    // Aula 10: contadores GUARDADOS, mantidos por transações nos módulos like e comment
     likesCount: {
       type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    commentsCount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
       defaultValue: 0,
     },
   },
