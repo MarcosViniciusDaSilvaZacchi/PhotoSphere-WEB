@@ -14,10 +14,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
-  background-color: #1a1a2e;
-  color: #aaa;
+  padding: 1.25rem 2rem;
+  background-color: var(--ps-bg);
+  border-top: 1px solid var(--ps-border);
+  color: var(--ps-muted);
   font-size: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .footer__links {
@@ -26,12 +29,12 @@
 }
 
 .footer__links a {
-  color: #aaa;
+  color: var(--ps-muted);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .footer__links a:hover {
-  color: #fff;
+  color: var(--brand-color-light);
 }
 </style>

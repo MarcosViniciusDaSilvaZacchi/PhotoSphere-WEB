@@ -7,6 +7,7 @@ const router = express.Router();
 const userController = require('./userController');
 const { registerValidator, loginValidator, profileUpdateValidator } = require('./userValidator');
 const { isAuthenticated } = require('../../middlewares/auth');
+const { optionalAuth } = require('../../middlewares/optionalAuth');
 const uploadProfile = require('../../middlewares/profileMulter');
 const asyncHandler = require('../../middlewares/asyncHandler');
 
@@ -32,7 +33,9 @@ router.put(
   asyncHandler(userController.updateProfile)
 );
 
-// GET /api/profile/:username - perfil público
-router.get('/profile/:username', asyncHandler(userController.getPublicProfile));
+// GET /api/profile/:username - perfil público com as fotos da pessoa e isOwner (Aula 09).
+// optionalAuth: visitante vê o perfil normalmente; com token, a API sabe se é o dono.
+// Fica DEPOIS de /profile/me para que "me" não seja tratado como um username.
+router.get('/profile/:username', optionalAuth, asyncHandler(userController.getPublicProfile));
 
 module.exports = router;

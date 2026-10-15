@@ -252,8 +252,10 @@ onUnmounted(() => {
 }
 
 .profile-card {
-  background-color: #fff9f6;
-  border: 1px solid rgba(255, 102, 34, 0.15) !important;
+  /* Aula 09: alinhado ao tema escuro do restante da aplicação */
+  background-color: var(--ps-surface);
+  border: 1px solid var(--ps-border) !important;
+  color: var(--ps-text);
 }
 
 .avatar-wrapper {
@@ -265,7 +267,7 @@ onUnmounted(() => {
   width: 130px;
   height: 130px;
   object-fit: cover;
-  border: 4px solid #fff;
+  border: 4px solid var(--ps-surface);
   outline: 2px solid #FF8E5C;
 }
 

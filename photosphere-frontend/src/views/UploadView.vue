@@ -10,7 +10,7 @@
  */
 
 import { ref, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import { uploadPhoto } from '@/services/photoService'
 import FormCard from '@/components/base/FormCard.vue'
 import BaseInput from '@/components/base/BaseInput.vue'
@@ -151,14 +151,20 @@ async function handleSubmit() {
     clearInterval(progressTimer)
     uploadProgress.value = 100
     successMessage.value = response?.message || 'Foto publicada com sucesso!'
+
+    // Limpa o formulário para uma próxima publicação
+    title.value = ''
+    description.value = ''
+    removeSelectedFile()
   } catch (err) {
+    // Aula 09: o erro da API passa a ser exibido de verdade (antes era mascarado como sucesso)
     clearInterval(progressTimer)
-    uploadProgress.value = 100
-    successMessage.value = 'Foto publicada com sucesso! Contador photosCount atualizado.'
+    uploadProgress.value = 0
+    errorMessage.value = err.message || 'Não foi possível publicar a foto.'
   } finally {
     setTimeout(() => {
       isUploading.value = false
-    }, 4000)
+    }, 600)
   }
 }
 
@@ -185,7 +191,11 @@ onUnmounted(() => {
         role="alert"
       >
         <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-        <div>{{ successMessage }}</div>
+        <div>
+          {{ successMessage }}
+          <!-- Aula 09: atalho para gerenciar a foto recém-publicada -->
+          <RouterLink to="/my-photos" class="alert-link ms-1">Ver em Minhas Fotos →</RouterLink>
+        </div>
       </div>
 
       <div

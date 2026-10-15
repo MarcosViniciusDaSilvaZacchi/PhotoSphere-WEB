@@ -29,9 +29,10 @@ import AppFooter from '@/components/AppFooter.vue'
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f5f5;
-  color: #333;
+  /* Aula 09: tema escuro moderno — tokens definidos em assets/main.css */
+  font-family: var(--ps-font);
+  background-color: var(--ps-bg);
+  color: var(--ps-text);
 }
 
 /* Layout flexbox em coluna para grudar o footer no fundo */
@@ -44,6 +45,6 @@ body {
 /* O conteúdo principal cresce e empurra o footer para baixo */
 .app-content {
   flex: 1;
-  padding: 2rem;
+  padding: 2.5rem 1.25rem 4rem;
 }
 </style>

@@ -63,7 +63,9 @@ exports.updateProfile = async (req, res) => {
 };
 
 exports.getPublicProfile = async (req, res) => {
-  const user = await userService.getPublicProfile(req.params.username);
+  // optionalAuth: req.user só existe se veio um token válido
+  const currentUserId = req.user ? req.user.id : null;
+  const user = await userService.getPublicProfile(req.params.username, currentUserId);
   return res.success('Perfil obtido com sucesso', user);
 };
 

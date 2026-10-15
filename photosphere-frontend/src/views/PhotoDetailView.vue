@@ -1,6 +1,17 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+/**
+ * PhotoDetailView.vue — Detalhe da foto (Aula 08, atualizado na Aula 09).
+ *
+ * Aula 09:
+ *  - Autor clicável → perfil público.
+ *  - Botão "Editar" só aparece quando isOwner (vindo da API) é true.
+ *    Esconder o botão é apenas USABILIDADE, não segurança: quem decide se a
+ *    edição é permitida é a API (403 em GET /photos/:id/edit e PUT /photos/:id).
+ *  - Rota pública: visitantes também veem o detalhe (a API usa optionalAuth).
+ */
+
+import { ref, watch } from 'vue'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { getPhotoById } from '@/services/photoService'
 import { getPhotoUrl, getProfilePictureUrl } from '@/utils/media'
 
@@ -23,167 +34,158 @@ async function fetchPhotoDetails(id) {
     photo.value = data
     isOwner.value = !!data.isOwner
   } catch (error) {
-    if (error.response?.status === 404) {
-      errorMessage.value = 'Foto não encontrada. O item pode ter sido removido.'
-    } else {
-      errorMessage.value = error.message || 'Erro ao carregar detalhes da foto.'
-    }
+    // O interceptor do api.js normaliza o erro para { message, errors, status }
+    errorMessage.value =
+      error.status === 404
+        ? 'Foto não encontrada. O item pode ter sido removido.'
+        : error.message || 'Erro ao carregar detalhes da foto.'
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  fetchPhotoDetails(route.params.id)
-})
-
-watch(() => route.params.id, (newId) => {
-  if (newId) {
-    fetchPhotoDetails(newId)
-  }
-})
+watch(
+  () => route.params.id,
+  (id) => {
+    if (id) fetchPhotoDetails(id)
+  },
+  { immediate: true }
+)
 
 function goBack() {
-  router.back()
+  if (window.history.length > 1) router.back()
+  else router.push('/')
 }
 </script>
 
 <template>
-  <div class="photo-detail-view container py-4">
-    <!-- Botão de Voltar -->
-    <button @click="goBack" class="btn btn-outline-secondary btn-sm mb-4">
-      <i class="bi bi-arrow-left me-1"></i> Voltar
-    </button>
+  <div class="ps-page detail-page">
+    <button type="button" class="back-link" @click="goBack"><i class="bi bi-arrow-left"></i> Voltar</button>
 
-    <!-- State: Carregando -->
-    <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border text-orange" role="status" style="width: 3rem; height: 3rem;"></div>
-      <p class="text-muted mt-3">Carregando imagem em alta resolução...</p>
+    <!-- Carregando -->
+    <div v-if="loading" class="detail-grid">
+      <div class="ps-skeleton" style="height: 520px"></div>
+      <div class="ps-skeleton" style="height: 520px"></div>
     </div>
 
-    <!-- State: Erro (ex: 404 ID Inexistente) -->
-    <div v-else-if="errorMessage" class="card bg-dark border-danger text-center p-5 my-4 shadow">
-      <i class="bi bi-exclamation-octagon text-danger display-1 mb-3"></i>
-      <h3 class="text-white">{{ errorMessage }}</h3>
+    <!-- Erro (ex: 404 ID inexistente) -->
+    <div v-else-if="errorMessage" class="ps-empty">
+      <div class="ps-empty__icon"><i class="bi bi-image-alt"></i></div>
+      <h1 class="h4 fw-bold">{{ errorMessage }}</h1>
       <p class="text-muted">Verifique o endereço digitado ou navegue pelo feed.</p>
-      <div class="mt-3">
-        <RouterLink to="/feed" class="btn btn-brand">
-          <i class="bi bi-grid-3x3-gap-fill me-1"></i> Ir para o Feed
-        </RouterLink>
-      </div>
+      <RouterLink to="/feed" class="ps-btn ps-btn--primary mt-2"><i class="bi bi-grid-3x3-gap"></i> Ir para o Feed</RouterLink>
     </div>
 
-    <!-- State: Sucesso (Exibição da Imagem em Resolução Real — Grupo B) -->
-    <div v-else-if="photo" class="card bg-dark border-secondary overflow-hidden shadow-lg">
-      <!-- Imagem em Resolução Real -->
-      <div class="photo-container text-center bg-black position-relative p-2">
-        <img
-          :src="getPhotoUrl(photo.imageUrl)"
-          :alt="photo.title"
-          class="img-fluid photo-full-res"
-        />
+    <!-- Sucesso: imagem em resolução real (Grupo B) -->
+    <div v-else-if="photo" class="detail-grid">
+      <figure class="photo-stage">
+        <img :src="getPhotoUrl(photo.imageUrl)" :alt="photo.title" class="photo-stage__img" />
+      </figure>
 
-        <!-- Badge indicando Grupo B (Imagem estática sem player) -->
-        <div v-if="isOwner" class="position-absolute top-0 end-0 m-3">
-          <span class="badge bg-warning text-dark px-3 py-2 fw-bold shadow">
-            <i class="bi bi-star-fill me-1"></i> Você é o autor
-          </span>
-        </div>
-      </div>
-
-      <!-- Detalhes e Metadados da Fotografia -->
-      <div class="card-body p-4 text-white">
-        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 border-bottom border-secondary pb-3 mb-3">
-          <div>
-            <h2 class="fw-bold mb-1">{{ photo.title }}</h2>
-            <p v-if="photo.description" class="text-light mb-0 fs-5">
-              {{ photo.description }}
-            </p>
-            <p v-else class="text-muted fst-italic mb-0">Sem descrição informada.</p>
-          </div>
-
-          <!-- Métricas da Foto -->
-          <div class="d-flex gap-4 bg-black px-4 py-2 rounded-pill border border-secondary">
-            <div class="text-center">
-              <span class="d-block text-orange fw-bold fs-5">{{ photo.viewsCount || 0 }}</span>
-              <span class="small text-muted"><i class="bi bi-eye me-1"></i>Visualizações</span>
-            </div>
-            <div class="border-end border-secondary"></div>
-            <div class="text-center">
-              <span class="d-block text-orange fw-bold fs-5">{{ photo.likesCount || 0 }}</span>
-              <span class="small text-muted"><i class="bi bi-heart me-1"></i>Curtidas</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Informações do Autor -->
-        <div class="d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-3">
-            <img
-              :src="getProfilePictureUrl(photo.author?.profilePicture)"
-              :alt="photo.author?.username || 'Autor'"
-              class="rounded-circle photo-author-avatar"
-            />
+      <aside class="ps-surface info-panel">
+        <!-- Autor + ações do dono -->
+        <div class="info-panel__top">
+          <RouterLink
+            v-if="photo.author"
+            :to="{ name: 'profile', params: { username: photo.author.username } }"
+            class="author"
+          >
+            <img :src="getProfilePictureUrl(photo.author.profilePicture)" :alt="photo.author.username" />
             <div>
-              <h6 class="mb-0 text-white fw-bold">
-                {{ photo.author?.fullName || photo.author?.username }}
-              </h6>
-              <span class="small text-muted">@{{ photo.author?.username }}</span>
+              <strong>{{ photo.author.fullName || photo.author.username }}</strong>
+              <span>@{{ photo.author.username }}</span>
             </div>
-          </div>
+          </RouterLink>
 
-          <span class="small text-muted">
-            <i class="bi bi-calendar3 me-1"></i>
-            {{ new Date(photo.createdAt).toLocaleDateString('pt-BR') }}
-          </span>
+          <RouterLink
+            v-if="isOwner"
+            :to="{ name: 'photo-edit', params: { id: photo.id } }"
+            class="ps-btn ps-btn--ghost ps-btn--sm"
+          >
+            <i class="bi bi-pencil"></i> Editar
+          </RouterLink>
         </div>
-      </div>
+
+        <h1 class="info-panel__title">{{ photo.title }}</h1>
+        <p v-if="photo.description" class="info-panel__desc">{{ photo.description }}</p>
+        <p v-else class="info-panel__desc fst-italic">Sem descrição informada.</p>
+
+        <div class="info-panel__stats">
+          <span class="ps-chip"><i class="bi bi-eye"></i> {{ photo.viewsCount || 0 }} visualizações</span>
+          <span class="ps-chip"><i class="bi bi-heart"></i> {{ photo.likesCount || 0 }} curtidas</span>
+          <span class="ps-chip"><i class="bi bi-calendar3"></i> {{ new Date(photo.createdAt).toLocaleDateString('pt-BR') }}</span>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
 
 <style scoped>
-.photo-detail-view {
-  max-width: 960px;
-}
+.detail-page { max-width: 1240px; }
 
-.text-orange {
-  color: #FF6622;
-}
-
-.photo-container {
-  min-height: 300px;
-  max-height: 70vh;
-  display: flex;
+.back-link {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-}
-
-.photo-full-res {
-  max-height: 68vh;
-  width: auto;
-  object-fit: contain;
-  border-radius: 4px;
-}
-
-.photo-author-avatar {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border: 2px solid #FF6622;
-}
-
-.btn-brand {
-  background-color: #FF6622;
-  color: #fff;
-  border: none;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ps-muted);
+  font-size: 0.9rem;
   font-weight: 600;
+}
+.back-link:hover { color: var(--brand-color-light); }
 
-  transition: background-color 0.2s ease;
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 1fr);
+  gap: 1.5rem;
+  align-items: start;
 }
 
-.btn-brand:hover {
-  background-color: #E74800;
-  color: #fff;
+.photo-stage {
+  margin: 0;
+  display: grid;
+  place-items: center;
+  min-height: 420px;
+  max-height: calc(100vh - 160px);
+  padding: 0.75rem;
+  border-radius: var(--ps-radius);
+  background: #070504;
+  border: 1px solid var(--ps-border);
+  position: sticky;
+  top: 90px;
+}
+.photo-stage__img {
+  max-width: 100%;
+  max-height: calc(100vh - 190px);
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.info-panel { padding: 1.4rem; }
+
+.info-panel__top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+
+.author { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; color: var(--ps-text); min-width: 0; }
+.author img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px var(--ps-surface), 0 0 0 4px rgba(255, 102, 34, 0.7);
+}
+.author strong { display: block; font-size: 0.95rem; }
+.author span { color: var(--ps-muted); font-size: 0.82rem; }
+.author:hover strong { color: var(--brand-color-light); }
+
+.info-panel__title { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.03em; margin: 1.25rem 0 0.5rem; }
+.info-panel__desc { color: var(--ps-muted); line-height: 1.6; white-space: pre-line; }
+.info-panel__stats { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+
+@media (max-width: 900px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .photo-stage { position: static; }
 }
 </style>

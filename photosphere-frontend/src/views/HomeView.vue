@@ -87,7 +87,9 @@ onMounted(async () => {
   background-image: url('@/assets/fundo.jpg');
   background-size: cover;
   background-position: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 30px 80px -30px rgba(255, 102, 34, 0.35);
+  border: 1px solid var(--ps-border);
+  max-width: 640px;
 }
 
 .hero-bg-overlay {
@@ -96,7 +98,7 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.88);
+  background: linear-gradient(180deg, rgba(12, 10, 9, 0.72), rgba(12, 10, 9, 0.92));
   backdrop-filter: blur(4px);
 }
 
@@ -110,12 +112,13 @@ onMounted(async () => {
 .hero__title {
   font-size: 3rem;
   font-weight: 800;
-  color: #1f120c;
+  color: var(--ps-text);
+  letter-spacing: -0.04em;
 }
 
 .hero__subtitle {
   font-size: 1.15rem;
-  color: #555;
+  color: var(--ps-muted);
   max-width: 480px;
 }
 
@@ -124,15 +127,15 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--ps-border-strong);
   border-radius: 2rem;
   padding: 0.4rem 1rem;
   font-size: 0.9rem;
 }
 
 .api-status__label {
-  color: #666;
+  color: var(--ps-muted);
 }
 
 .api-status__badge {
@@ -153,7 +156,7 @@ onMounted(async () => {
 
 .btn {
   padding: 0.75rem 1.75rem;
-  border-radius: 0.5rem;
+  border-radius: 999px;
   text-decoration: none;
   font-weight: 600;
   font-size: 1rem;
@@ -162,6 +165,6 @@ onMounted(async () => {
 
 .btn:hover { opacity: 0.85; }
 
-.btn--primary   { background: #1a1a2e; color: #fff; }
-.btn--secondary { background: #fff; color: #1a1a2e; border: 2px solid #1a1a2e; }
+.btn--primary   { background: var(--brand-color); color: #fff; box-shadow: var(--ps-glow); }
+.btn--secondary { background: transparent; color: var(--ps-text); border: 1px solid var(--ps-border-strong); }
 </style>

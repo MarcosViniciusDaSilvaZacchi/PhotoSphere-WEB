@@ -103,7 +103,20 @@ async function getUserProfile(userId) {
   return user;
 }
 
-async function getPublicProfile(username) {
+/**
+ * GET /api/profile/:username — perfil público com a lista de fotos da pessoa (Aula 09).
+ *
+ * As fotos vêm pelo include da associação User.hasMany(Photo, as: 'photos').
+ * A ordenação de um include precisa ficar no NÍVEL DE CIMA da consulta,
+ * apontando para o modelo associado — um "order" dentro do include é ignorado
+ * pelo Sequelize nesse tipo de consulta.
+ *
+ * @param {string} username
+ * @param {number|null} currentUserId - quem está vendo (via optionalAuth)
+ */
+async function getPublicProfile(username, currentUserId = null) {
+  const Photo = require('../photo/photoModel');
+
   const user = await User.findOne({
     where: { username },
     attributes: [
@@ -115,7 +128,16 @@ async function getPublicProfile(username) {
       'followersCount',
       'followingCount',
       'photosCount',
+      'createdAt',
     ],
+    include: [
+      {
+        model: Photo,
+        as: 'photos',
+        attributes: ['id', 'title', 'description', 'imageUrl', 'userId', 'viewsCount', 'likesCount', 'createdAt'],
+      },
+    ],
+    order: [[{ model: Photo, as: 'photos' }, 'createdAt', 'DESC'], [{ model: Photo, as: 'photos' }, 'id', 'DESC']],
   });
 
   if (!user) {
@@ -124,7 +146,10 @@ async function getPublicProfile(username) {
     throw error;
   }
 
-  return user;
+  const profile = user.toJSON();
+  profile.isOwner = currentUserId ? Number(currentUserId) === Number(profile.id) : false;
+
+  return profile;
 }
 
 async function updateUserProfile(userId, { fullName, bio }, file) {

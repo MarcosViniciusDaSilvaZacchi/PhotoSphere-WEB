@@ -65,7 +65,7 @@ defineProps({
 }
 
 .form-card {
-  background: #18141d;
+  background: var(--ps-surface);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
