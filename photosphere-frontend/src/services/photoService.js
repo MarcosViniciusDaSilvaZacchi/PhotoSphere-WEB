@@ -24,6 +24,19 @@ export function uploadPhoto(formData, onUploadProgress) {
 }
 
 /**
+ * Obtém o feed de fotos com paginação por page e limit.
+ *
+ * @param {number} page - Número da página
+ * @param {number} limit - Quantidade de itens por página
+ * @returns {Promise}
+ */
+export function getFeed(page = 1, limit = 10) {
+  return api.get('/feed', {
+    params: { page, limit },
+  });
+}
+
+/**
  * Obtém as fotos mais recentes da plataforma.
  *
  * @param {number} limit - Quantidade máxima de fotos a retornar

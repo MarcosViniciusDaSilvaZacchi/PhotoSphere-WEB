@@ -47,10 +47,14 @@ exports.loginValidator = [
   body('email')
     .notEmpty()
     .withMessage('O e-mail ou nome de usuário é obrigatório.')
+    .isLength({ min: 2 })
+    .withMessage('O e-mail ou nome de usuário deve ter pelo menos 2 caracteres.')
     .trim(),
   body('password')
     .notEmpty()
-    .withMessage('A senha é obrigatória.'),
+    .withMessage('A senha é obrigatória.')
+    .isLength({ min: VALIDATION.PASSWORD_MIN })
+    .withMessage(`A senha deve ter pelo menos ${VALIDATION.PASSWORD_MIN} caracteres.`),
   validate,
 ];
 

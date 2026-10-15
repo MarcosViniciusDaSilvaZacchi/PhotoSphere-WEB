@@ -13,6 +13,7 @@ const router = express.Router();
 const photoController = require('./photoController');
 const { createPhotoValidator } = require('./photoValidator');
 const { isAuthenticated } = require('../../middlewares/auth');
+const { optionalAuth } = require('../../middlewares/optionalAuth');
 const uploadPhoto = require('../../middlewares/photoMulter');
 const asyncHandler = require('../../middlewares/asyncHandler');
 
@@ -25,10 +26,13 @@ router.post(
   asyncHandler(photoController.createPhoto)
 );
 
-// GET /api/photos — Listagem pública de fotos recentes
+// GET /api/feed — Feed paginado de itens recentes (protegido por token)
+router.get('/feed', isAuthenticated, asyncHandler(photoController.getFeed));
+
+// GET /api/photos — Listagem de fotos (pública)
 router.get('/photos', asyncHandler(photoController.listPhotos));
 
-// GET /api/photos/:id — Detalhes de uma foto por ID
-router.get('/photos/:id', asyncHandler(photoController.getPhoto));
+// GET /api/photos/:id — Detalhes de uma foto por ID (público via optionalAuth)
+router.get('/photos/:id', optionalAuth, asyncHandler(photoController.getPhoto));
 
 module.exports = router;

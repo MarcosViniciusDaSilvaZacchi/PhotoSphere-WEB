@@ -31,22 +31,6 @@ export const useAuthStore = defineStore('auth', () => {
 
       return response
     } catch (err) {
-      // Fallback para desenvolvimento e testes de interface quando a API/banco não estiverem disponíveis
-      if (credentials.email && credentials.password) {
-        token.value = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJtYXJrdiIsImlzQWRtaW4iOmZhbHNlLCJpYXQiOjE3ODk5Mzc1OTEsImV4cCI6MTc5MDU0MjM5MX0.Wwo4b2Aa5q0qp7KbV4yfQJqnJBnUC-JwQdSAmpJZyLE'
-        user.value = {
-          id: 1,
-          username: credentials.email.includes('@') ? credentials.email.split('@')[0] : credentials.email,
-          fullName: 'Marcos Vinicius',
-          email: credentials.email.includes('@') ? credentials.email : `${credentials.email}@photosphere.com`,
-          bio: 'Fotógrafo e criador de conteúdo no PhotoSphere.',
-          profilePicture: 'default-profile.png',
-          isAdmin: false,
-        }
-        localStorage.setItem('token', token.value)
-        localStorage.setItem('user', JSON.stringify(user.value))
-        return { success: true, data: { token: token.value, user: user.value } }
-      }
       throw err
     }
   }

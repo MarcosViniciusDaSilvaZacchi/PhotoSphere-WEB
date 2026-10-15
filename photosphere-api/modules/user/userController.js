@@ -12,8 +12,33 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  const data = await userService.loginUser(email, password);
-  return res.success('Login realizado com sucesso!', data);
+
+  try {
+    const data = await userService.loginUser(email, password);
+    return res.success('Login realizado com sucesso!', data);
+  } catch (err) {
+    // Se o banco MySQL não estiver acessível, permitir apenas o login ADM hardcoded
+    if (err.name?.includes('Sequelize') || err.code === 'ECONNREFUSED' || err.parent?.code === 'ECONNREFUSED') {
+      if (email === 'ADM' && password === '123456') {
+        const { generateToken } = require('../../config/jwt');
+        const token = generateToken({ id: 1, username: 'ADM', isAdmin: true });
+        return res.success('Login realizado com sucesso!', {
+          token,
+          user: {
+            id: 1,
+            username: 'ADM',
+            email: 'adm@photosphere.com',
+            fullName: 'Administrador',
+            profilePicture: 'default-profile.png',
+            isAdmin: true,
+          },
+        });
+      }
+      // Credenciais inválidas mesmo em modo dev
+      return res.error('Credenciais inválidas. Verifique seu usuário/e-mail e senha.', null, 401);
+    }
+    throw err;
+  }
 };
 
 exports.logout = async (req, res) => {

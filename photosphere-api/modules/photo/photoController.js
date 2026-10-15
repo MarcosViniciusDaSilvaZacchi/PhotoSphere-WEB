@@ -16,14 +16,24 @@ exports.createPhoto = async (req, res) => {
 };
 
 exports.listPhotos = async (req, res) => {
-  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
-  const photos = await photoService.listPhotos(limit);
+  const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+  const photos = await photoService.getFeed(page, limit);
 
   return res.success('Fotos obtidas com sucesso', photos);
 };
 
+exports.getFeed = async (req, res) => {
+  const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+  const photos = await photoService.getFeed(page, limit);
+
+  return res.success('Feed obtido com sucesso', photos);
+};
+
 exports.getPhoto = async (req, res) => {
-  const photo = await photoService.getPhotoById(req.params.id);
+  const currentUserId = req.user ? req.user.id : null;
+  const photo = await photoService.getPhotoDetails(req.params.id, currentUserId);
 
   return res.success('Foto obtida com sucesso', photo);
 };
