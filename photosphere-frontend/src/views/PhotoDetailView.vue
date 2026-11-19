@@ -12,52 +12,35 @@
  * Aula 10:
  *  - LikeButton (otimista) recebe isLiked e likesCount do detalhe.
  *  - CommentSection lista e publica comentários; o contador acompanha.
+ *
+ * Aula 12: dados carregados pelo useAsyncData (com watch no :id da rota).
  */
 
-import { ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { getPhotoById } from '@/services/photoService'
 import { getPhotoUrl, getProfilePictureUrl } from '@/utils/media'
 import { pluralize } from '@/utils/format'
+import { useAsyncData } from '@/composables/useAsyncData'
 import LikeButton from '@/components/LikeButton.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
 const route = useRoute()
 const router = useRouter()
 
-const photo = ref(null)
-const isOwner = ref(false)
-const loading = ref(true)
-const errorMessage = ref('')
+// Aula 12: o esqueleto loading / errorMessage / try-catch-finally virou o useAsyncData.
+// watch na rota: ir de /photo/1 para /photo/2 reaproveita o componente e recarrega.
+const { data: photo, error, isLoading: loading } = useAsyncData(() => getPhotoById(route.params.id), {
+  watch: () => route.params.id,
+})
 
-async function fetchPhotoDetails(id) {
-  loading.value = true
-  errorMessage.value = ''
-  photo.value = null
-
-  try {
-    const response = await getPhotoById(id)
-    const data = response.data || {}
-    photo.value = data
-    isOwner.value = !!data.isOwner
-  } catch (error) {
-    // O interceptor do api.js normaliza o erro para { message, errors, status }
-    errorMessage.value =
-      error.status === 404
-        ? 'Foto não encontrada. O item pode ter sido removido.'
-        : error.message || 'Erro ao carregar detalhes da foto.'
-  } finally {
-    loading.value = false
-  }
-}
-
-watch(
-  () => route.params.id,
-  (id) => {
-    if (id) fetchPhotoDetails(id)
-  },
-  { immediate: true }
-)
+const isOwner = computed(() => !!photo.value?.isOwner)
+const errorText = computed(() => {
+  if (!error.value) return ''
+  return error.value.status === 404
+    ? 'Foto não encontrada. O item pode ter sido removido.'
+    : error.value.message || 'Erro ao carregar detalhes da foto.'
+})
 
 // Mantém os números do painel coerentes com o que os componentes filhos fizeram
 function onLikeChange({ liked, likesCount }) {
@@ -87,9 +70,9 @@ function goBack() {
     </div>
 
     <!-- Erro (ex: 404 ID inexistente) -->
-    <div v-else-if="errorMessage" class="ps-empty">
+    <div v-else-if="errorText" class="ps-empty">
       <div class="ps-empty__icon"><i class="bi bi-image-alt"></i></div>
-      <h1 class="h4 fw-bold">{{ errorMessage }}</h1>
+      <h1 class="h4 fw-bold">{{ errorText }}</h1>
       <p class="text-muted">Verifique o endereço digitado ou navegue pelo feed.</p>
       <RouterLink to="/feed" class="ps-btn ps-btn--primary mt-2"><i class="bi bi-grid-3x3-gap"></i> Ir para o Feed</RouterLink>
     </div>

@@ -6,6 +6,7 @@
  */
 
 const photoService = require('./photoService');
+const { parsePagination } = require('../../utils/pagination');
 
 exports.createPhoto = async (req, res) => {
   const { title, description } = req.body;
@@ -19,16 +20,14 @@ exports.createPhoto = async (req, res) => {
 };
 
 exports.listPhotos = async (req, res) => {
-  const page = req.query.page ? parseInt(req.query.page, 10) : 1;
-  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+  const { page, limit } = parsePagination(req.query); // Aula 12
   const photos = await photoService.getFeed(page, limit);
 
   return res.success('Fotos obtidas com sucesso', photos);
 };
 
 exports.getFeed = async (req, res) => {
-  const page = req.query.page ? parseInt(req.query.page, 10) : 1;
-  const limit = req.query.limit ? parseInt(req.query.limit, 10) : 10;
+  const { page, limit } = parsePagination(req.query); // Aula 12
   const photos = await photoService.getFeed(page, limit);
 
   return res.success('Feed obtido com sucesso', photos);

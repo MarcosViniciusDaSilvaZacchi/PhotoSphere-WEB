@@ -17,6 +17,7 @@ const Comment = require('../comment/commentModel');
 const Follow = require('../follow/followModel');
 const { removeUpload } = require('../../utils/fileStorage');
 const { isDatabaseOffline } = require('../../utils/dbFallback');
+const { PAGINATION } = require('../../config/constants');
 
 // Atributos públicos do autor — NUNCA inclui senha, e-mail ou flags internas
 const AUTHOR_ATTRIBUTES = ['id', 'username', 'fullName', 'profilePicture'];
@@ -57,17 +58,27 @@ async function findOwnedPhotoOrFail(id, userId, options = {}) {
  */
 async function createPhoto({ title, description }, file, userId) {
   try {
-    const photo = await Photo.create({
-      title,
-      description: description || null,
-      imageUrl: file.filename,
-      userId,
-    });
+    // Aula 12: a foto e o contador do autor são gravados JUNTOS (transação).
+    // Sem ela, se o increment falhasse depois do create, a foto existiria
+    // e o photosCount do perfil ficaria um a menos — para sempre.
+    const photo = await sequelize.transaction(async (t) => {
+      const created = await Photo.create(
+        {
+          title,
+          description: description || null,
+          imageUrl: file.filename,
+          userId,
+        },
+        { transaction: t }
+      );
 
-    // Incrementa a coluna de contagem do usuário (photosCount) definida na Aula 03
-    await User.increment('photosCount', {
-      by: 1,
-      where: { id: userId },
+      await User.increment('photosCount', {
+        by: 1,
+        where: { id: userId },
+        transaction: t,
+      });
+
+      return created;
     });
 
     // Retorna a foto incluindo informações públicas do autor
@@ -104,9 +115,10 @@ async function createPhoto({ title, description }, file, userId) {
  * @param {number} page - Número da página (1-indexed)
  * @param {number} limit - Quantidade de itens por página
  */
-async function getFeed(page = 1, limit = 10) {
-  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
-  const limitNum = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+async function getFeed(page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.DEFAULT_LIMIT) {
+  // Aula 12: page/limit já chegam validados pelo parsePagination do controller
+  const pageNum = page;
+  const limitNum = limit;
   const offset = (pageNum - 1) * limitNum;
 
   try {
@@ -157,7 +169,7 @@ async function getFeed(page = 1, limit = 10) {
  * @param {number} page
  * @param {number} limit
  */
-async function getFollowingPhotos(userId, page = 1, limit = 12) {
+async function getFollowingPhotos(userId, page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.DEFAULT_LIMIT) {
   const follows = await Follow.findAll({
     where: { followerId: userId },
     attributes: ['followingId'],

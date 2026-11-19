@@ -3,6 +3,7 @@
 // Envolve todas as páginas com o layout base: Navbar + conteúdo + Footer.
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import ToastContainer from '@/components/ToastContainer.vue' // Aula 12
 </script>
 
 <template>
@@ -17,6 +18,9 @@ import AppFooter from '@/components/AppFooter.vue'
 
     <!-- Footer fixo no rodapé — aparece em todas as páginas -->
     <AppFooter />
+
+    <!-- Aula 12: avisos flutuantes, montados uma única vez -->
+    <ToastContainer />
   </div>
 </template>
 

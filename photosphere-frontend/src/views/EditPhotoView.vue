@@ -17,13 +17,14 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { getPhotoForEdit, updatePhoto } from '@/services/photoService'
 import { getPhotoUrl } from '@/utils/media'
+import { LIMITS } from '@/config/constants'
 
 const route = useRoute()
 const photoId = route.params.id
 
-// Limites espelhados de config/constants.js da API
-const TITLE_MAX = 100
-const DESCRIPTION_MAX = 500
+// Limites espelhados de config/constants.js da API (Aula 12: um lugar só no front também)
+const TITLE_MAX = LIMITS.TITLE_MAX
+const DESCRIPTION_MAX = LIMITS.DESCRIPTION_MAX
 
 const form = reactive({ title: '', description: '' })
 const currentImage = ref('')

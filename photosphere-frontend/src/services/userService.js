@@ -25,6 +25,7 @@ export function updateProfile(formData) {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    silent: true, // Aula 12: formulário — o erro aparece na própria tela, sem toast
   })
 }
 

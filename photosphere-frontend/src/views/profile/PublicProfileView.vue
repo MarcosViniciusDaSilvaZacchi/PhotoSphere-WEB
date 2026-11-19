@@ -14,55 +14,40 @@
  * o número "Seguidores" do cartão muda junto, sem recarregar.
  * Os números "Seguidores"/"Seguindo" são links para as listas.
  *
+ * Aula 12: carregamento pelo useAsyncData (watch no :username).
+ *
  * O watch em route.params.username é essencial: ao ir de um perfil para outro,
  * o Vue Router REAPROVEITA este componente (mesma rota, parâmetro diferente),
  * então o onMounted não roda de novo. Sem o watch, a tela ficaria com a pessoa antiga.
  */
 
-import { ref, computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { getPublicProfile } from '@/services/userService'
 import { getProfilePictureUrl } from '@/utils/media'
+import { useAsyncData } from '@/composables/useAsyncData'
 import PhotoCard from '@/components/PhotoCard.vue'
 import FollowButton from '@/components/FollowButton.vue'
 
 const route = useRoute()
 
-const profile = ref(null)
-const isOwner = ref(false)
-const isLoading = ref(true)
-const errorMessage = ref('')
+// Aula 12: useAsyncData com watch no :username — ir de um perfil para outro
+// reaproveita o componente (o onMounted não rodaria de novo), e a corrida entre
+// respostas fica resolvida pelo lastCallId do composable.
+const { data: profile, error, isLoading } = useAsyncData(() => getPublicProfile(route.params.username), {
+  watch: () => route.params.username,
+})
 
+const isOwner = computed(() => !!profile.value?.isOwner)
 const photos = computed(() => profile.value?.photos || [])
 const followersRoute = computed(() => ({ name: 'profile-followers', params: { username: profile.value?.username } }))
 const followingRoute = computed(() => ({ name: 'profile-following', params: { username: profile.value?.username } }))
-
-async function loadProfile(username) {
-  isLoading.value = true
-  errorMessage.value = ''
-  profile.value = null
-
-  try {
-    const response = await getPublicProfile(username)
-    profile.value = response.data
-    isOwner.value = !!response.data?.isOwner
-  } catch (error) {
-    errorMessage.value =
-      error.status === 404
-        ? `O usuário @${username} não foi encontrado.`
-        : error.message || 'Não foi possível carregar este perfil.'
-  } finally {
-    isLoading.value = false
-  }
-}
-
-watch(
-  () => route.params.username,
-  (username) => {
-    if (username) loadProfile(username)
-  },
-  { immediate: true }
-)
+const errorText = computed(() => {
+  if (!error.value) return ''
+  return error.value.status === 404
+    ? `O usuário @${route.params.username} não foi encontrado.`
+    : error.value.message || 'Não foi possível carregar este perfil.'
+})
 </script>
 
 <template>
@@ -76,9 +61,9 @@ watch(
     </div>
 
     <!-- Erro (ex.: username inexistente) — a tela continua de pé -->
-    <div v-else-if="errorMessage" class="ps-empty">
+    <div v-else-if="errorText" class="ps-empty">
       <div class="ps-empty__icon"><i class="bi bi-person-x"></i></div>
-      <h2 class="h4 fw-bold">{{ errorMessage }}</h2>
+      <h2 class="h4 fw-bold">{{ errorText }}</h2>
       <p class="text-muted">Confira o nome de usuário ou volte para o início.</p>
       <RouterLink to="/" class="ps-btn ps-btn--primary mt-2"><i class="bi bi-house"></i> Ir para o início</RouterLink>
     </div>

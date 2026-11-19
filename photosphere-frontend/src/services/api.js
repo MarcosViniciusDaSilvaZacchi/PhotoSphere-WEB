@@ -23,9 +23,19 @@
  *
  * Em qualquer caso, o .catch() sempre recebe { message, errors, status } —
  * esse padrão único elimina o "um tratamento de erro por tela".
+ *
+ * Aula 12 — quem AVISA o usuário (notifyIfNeeded):
+ *  - 401 → sessão inválida: limpa o login e leva à tela de Login (sem toast);
+ *  - requisição marcada com { silent: true } (formulários) → sem toast: o erro
+ *    aparece dentro do próprio formulário, ao lado dos campos;
+ *  - leitura (GET) → sem toast: a tela que pediu os dados mostra o erro no lugar
+ *    do conteúdo (um toast + uma tela de erro seria aviso duplicado);
+ *  - qualquer outra AÇÃO que falha (curtir, seguir, comentar, excluir...) → toast de erro.
  */
 
 import axios from 'axios'
+import { STORAGE_KEYS, MESSAGES } from '@/config/constants'
+import { useToast } from '@/composables/useToast'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL, // http://localhost:3000/api
@@ -38,7 +48,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Ler diretamente do localStorage evita dependência circular entre api.js e stores/auth.js
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -47,49 +57,60 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
+function redirectToLogin() {
+  localStorage.removeItem(STORAGE_KEYS.TOKEN)
+  localStorage.removeItem(STORAGE_KEYS.USER)
+
+  // Se não estivermos já na tela de login, redireciona guardando a rota pretendida
+  if (window.location.pathname !== '/login') {
+    const redirect = encodeURIComponent(window.location.pathname + window.location.search)
+    window.location.href = `/login?redirect=${redirect}`
+  }
+}
+
+/**
+ * Decide se o erro vira toast. Recebe o erro já normalizado e a config da requisição.
+ */
+function notifyIfNeeded(normalized, config = {}) {
+  if (normalized.status === 401) {
+    redirectToLogin()
+    return
+  }
+  if (config.silent) return
+
+  const method = (config.method || 'get').toLowerCase()
+  if (method === 'get') return
+
+  useToast().error(normalized.message)
+}
+
 api.interceptors.response.use(
   // Ramo 1 — Sucesso: descasca o envelope do Axios, entrega direto o body da API
   (response) => response.data,
 
   // Ramo 2, 3 e else — Erros: normaliza tudo no mesmo formato { message, errors, status }
   (error) => {
+    let normalized
+
     if (error.response) {
-      // Se for 401 (Não autorizado), limpa sessão e redireciona ao Login
-      if (error.response.status === 401) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-
-        // Se não estivermos já na tela de login, redireciona guardando a rota pretendida
-        if (window.location.pathname !== '/login') {
-          const redirect = encodeURIComponent(window.location.pathname + window.location.search)
-          window.location.href = `/login?redirect=${redirect}`
-        }
-      }
-
       // Ramo 2: API respondeu com erro (4xx / 5xx)
-      const apiError = error.response.data
-      return Promise.reject({
-        message: apiError.message || 'Ocorreu um erro na requisição.',
+      const apiError = error.response.data || {}
+      normalized = {
+        message: apiError.message || MESSAGES.UNEXPECTED_ERROR,
         errors: apiError.errors || [],
         status: error.response.status,
-      })
+      }
     } else if (error.request) {
       // Ramo 3: requisição enviada, nenhuma resposta recebida (API fora do ar)
-      return Promise.reject({
-        message: 'Não foi possível se conectar ao servidor. Verifique sua conexão ou tente mais tarde.',
-        errors: [],
-        status: null,
-      })
+      normalized = { message: MESSAGES.NETWORK_ERROR, errors: [], status: null }
     } else {
       // else: erro ao montar a própria requisição
-      return Promise.reject({
-        message: 'Erro inesperado ao preparar a requisição.',
-        errors: [],
-        status: null,
-      })
+      normalized = { message: MESSAGES.REQUEST_ERROR, errors: [], status: null }
     }
+
+    notifyIfNeeded(normalized, error.config)
+    return Promise.reject(normalized)
   }
 )
 
 export default api
-

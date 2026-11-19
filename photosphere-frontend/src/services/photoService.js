@@ -6,6 +6,7 @@
  */
 
 import api from './api';
+import { PAGE_SIZE } from '@/config/constants';
 
 /**
  * Realiza o upload de uma nova foto enviando multipart/form-data.
@@ -20,6 +21,7 @@ export function uploadPhoto(formData, onUploadProgress) {
       'Content-Type': 'multipart/form-data',
     },
     onUploadProgress,
+    silent: true, // Aula 12: formulário de upload mostra o próprio erro
   });
 }
 
@@ -30,7 +32,7 @@ export function uploadPhoto(formData, onUploadProgress) {
  * @param {number} limit - Quantidade de itens por página
  * @returns {Promise}
  */
-export function getFeed(page = 1, limit = 10) {
+export function getFeed(page = 1, limit = PAGE_SIZE) {
   return api.get('/feed', {
     params: { page, limit },
   });
@@ -88,6 +90,7 @@ export function updatePhoto(id, formData) {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    silent: true, // Aula 12: formulário de edição mostra o próprio erro
   });
 }
 

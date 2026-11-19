@@ -15,6 +15,7 @@ import { uploadPhoto } from '@/services/photoService'
 import FormCard from '@/components/base/FormCard.vue'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import { LIMITS } from '@/config/constants'
 
 const router = useRouter()
 
@@ -34,9 +35,9 @@ const errors = ref({
   image: '',
 })
 
-// Limites declarativos
-const TITLE_MAX = 100
-const DESCRIPTION_MAX = 500
+// Limites declarativos (Aula 12: vêm de config/constants.js, iguais aos da API)
+const TITLE_MAX = LIMITS.TITLE_MAX
+const DESCRIPTION_MAX = LIMITS.DESCRIPTION_MAX
 
 const fileInputRef = ref(null)
 

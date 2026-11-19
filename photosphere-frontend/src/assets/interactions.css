@@ -34,18 +34,7 @@
   100% { transform: scale(1); }
 }
 
-/* o wrapper "some" do layout: botão e mensagem viram filhos diretos da linha de ações */
-.like-wrapper { display: contents; }
 
-.like-error {
-  order: 10;
-  flex-basis: 100%;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  color: #ff8a8e;
-}
 
 /* ─── Seção de comentários ────────────────────────────────────────────────── */
 .comments__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
@@ -103,8 +92,6 @@
 /* ═══ Aula 11: seguir ══════════════════════════════════════════════════════ */
 
 /* ─── Botão de seguir ─────────────────────────────────────────────────────── */
-.follow-wrapper { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; }
-
 .follow-btn { min-width: 9.5rem; justify-content: center; }
 .follow-btn:disabled { cursor: progress; }
 .follow-btn.is-following .follow-btn__icon { color: var(--brand-color); }
@@ -116,15 +103,6 @@
 .follow-btn.is-following:hover:not(:disabled) .follow-btn__label { display: none; }
 .follow-btn.is-following:hover:not(:disabled) .follow-btn__hover { display: inline-flex; align-items: center; gap: 0.45rem; }
 
-.follow-error {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  max-width: 240px;
-  font-size: 0.8rem;
-  text-align: right;
-  color: #ff8a8e;
-}
 
 /* ─── Números do perfil como links ────────────────────────────────────────── */
 .stat-link {

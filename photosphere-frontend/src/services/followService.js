@@ -6,6 +6,7 @@
  */
 
 import api from './api'
+import { PAGE_SIZE } from '@/config/constants'
 
 /**
  * Segue ou deixa de seguir. Resposta: { isFollowing, followersCount }.
@@ -36,7 +37,7 @@ export function getFollowing(userId) {
  * @param {number} page
  * @param {number} limit
  */
-export function getFollowingPhotos(page = 1, limit = 12) {
+export function getFollowingPhotos(page = 1, limit = PAGE_SIZE) {
   return api.get('/following-photos', {
     params: { page, limit },
   })

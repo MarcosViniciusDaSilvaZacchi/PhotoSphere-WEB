@@ -13,66 +13,53 @@
  *
  * Exclusão: isDeleting deixa o modal "ocupado" (persistent + botões desabilitados)
  * e, no sucesso, a foto é removida da lista local — sem recarregar a página.
+ *
+ * Aula 12: leitura pelo useAsyncData; sucesso da exclusão vira toast verde e a
+ * falha vira o toast vermelho do interceptor (o modal continua aberto).
  */
 
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getMyPhotos, deletePhoto } from '@/services/photoService'
+import { useAsyncData } from '@/composables/useAsyncData'
+import { useToast } from '@/composables/useToast'
 import PhotoCard from '@/components/PhotoCard.vue'
 import BaseModal from '@/components/base/BaseModal.vue'
 
-const photos = ref([])
-const isLoading = ref(true)
-const errorMessage = ref('')
-const successMessage = ref('')
+const toast = useToast()
+
+// Aula 12: leitura pelo useAsyncData
+const { data: photos, error, isLoading } = useAsyncData(getMyPhotos, { initialData: [] })
 
 // Estado do modal de exclusão
 const isDeleteModalOpen = ref(false)
 const photoToDelete = ref(null)
 const isDeleting = ref(false)
-const deleteError = ref('')
-
-async function loadPhotos() {
-  isLoading.value = true
-  errorMessage.value = ''
-  try {
-    const response = await getMyPhotos()
-    photos.value = response.data || []
-  } catch (error) {
-    errorMessage.value = error.message || 'Não foi possível carregar suas fotos.'
-  } finally {
-    isLoading.value = false
-  }
-}
 
 function askDelete(photo) {
   photoToDelete.value = photo
-  deleteError.value = ''
   isDeleteModalOpen.value = true
 }
 
 async function confirmDelete() {
   if (!photoToDelete.value || isDeleting.value) return
   isDeleting.value = true
-  deleteError.value = ''
 
   try {
-    const removedId = photoToDelete.value.id
-    await deletePhoto(removedId)
+    const removed = photoToDelete.value
+    await deletePhoto(removed.id)
     // Remoção local: a grade atualiza na hora, sem nova requisição de listagem
-    photos.value = photos.value.filter((p) => p.id !== removedId)
-    successMessage.value = `"${photoToDelete.value.title}" foi excluída.`
-    setTimeout(() => (successMessage.value = ''), 3500)
-    isDeleting.value = false
+    photos.value = photos.value.filter((p) => p.id !== removed.id)
+    toast.success(`"${removed.title}" foi excluída.`)
     isDeleteModalOpen.value = false
     photoToDelete.value = null
-  } catch (error) {
-    deleteError.value = error.message || 'Não foi possível excluir a foto.'
+  } catch {
+    // O toast de erro é do interceptor (e aparece NA FRENTE do modal, que continua aberto
+    // para a pessoa tentar de novo ou cancelar). Um toast.error aqui duplicaria o aviso.
+  } finally {
     isDeleting.value = false
   }
 }
-
-onMounted(loadPhotos)
 </script>
 
 <template>
@@ -88,14 +75,9 @@ onMounted(loadPhotos)
       </RouterLink>
     </header>
 
-    <Transition name="fade">
-      <div v-if="successMessage" class="alert alert-success d-flex align-items-center gap-2 border-0" role="status">
-        <i class="bi bi-check-circle-fill"></i> {{ successMessage }}
-      </div>
-    </Transition>
 
-    <div v-if="errorMessage" class="alert alert-danger d-flex align-items-center gap-2 border-0" role="alert">
-      <i class="bi bi-exclamation-triangle-fill"></i> {{ errorMessage }}
+    <div v-if="error" class="alert alert-danger d-flex align-items-center gap-2 border-0" role="alert">
+      <i class="bi bi-exclamation-triangle-fill"></i> {{ error.message || 'Não foi possível carregar suas fotos.' }}
     </div>
 
     <!-- Carregando -->
@@ -120,7 +102,7 @@ onMounted(loadPhotos)
     </div>
 
     <!-- Estado vazio com link -->
-    <div v-else-if="!errorMessage" class="ps-empty">
+    <div v-else-if="!error" class="ps-empty">
       <div class="ps-empty__icon"><i class="bi bi-camera"></i></div>
       <h2 class="h5 fw-bold">Você ainda não publicou nenhuma foto</h2>
       <p class="text-muted">Suas publicações aparecem aqui para você editar ou excluir.</p>
@@ -141,9 +123,6 @@ onMounted(loadPhotos)
         <strong class="text-white">"{{ photoToDelete?.title }}"</strong> será removida permanentemente,
         junto com o arquivo da imagem. Essa ação não pode ser desfeita.
       </p>
-      <p v-if="deleteError" class="text-danger small mt-3 mb-0">
-        <i class="bi bi-exclamation-circle me-1"></i>{{ deleteError }}
-      </p>
 
       <template #footer="{ close }">
         <button type="button" class="ps-btn ps-btn--ghost" :disabled="isDeleting" @click="close">Cancelar</button>
@@ -157,7 +136,3 @@ onMounted(loadPhotos)
   </div>
 </template>
 
-<style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-</style>

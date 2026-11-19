@@ -8,16 +8,19 @@
  * Duas chamadas em sequência: a URL usa o USERNAME (legível, compartilhável),
  * mas a API de listas usa o ID — então primeiro o perfil (username → id), depois a lista.
  *
+ * Aula 12: carregamento pelo useAsyncData (watch em [kind, username]).
+ *
  * O watch observa [kind, username] com immediate: trocar de aba (mesma tela, kind
  * diferente) ou ir para a lista de outra pessoa reaproveita o componente — o
  * onMounted não rodaria de novo, e a tela ficaria com a lista antiga.
  */
 
-import { ref, computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { getPublicProfile } from '@/services/userService'
 import { getFollowers, getFollowing } from '@/services/followService'
 import { getProfilePictureUrl } from '@/utils/media'
+import { useAsyncData } from '@/composables/useAsyncData'
 
 const props = defineProps({
   kind: {
@@ -28,16 +31,24 @@ const props = defineProps({
 })
 
 const route = useRoute()
-
-const person = ref(null)
-const people = ref([])
-const isLoading = ref(true)
-const errorMessage = ref('')
-
-// Se o usuário trocar de aba rápido, só a resposta da ÚLTIMA chamada vale
-let lastCallId = 0
-
 const username = computed(() => route.params.username)
+
+// Aula 12: as duas chamadas em sequência (perfil → lista) viram UMA função de leitura
+// para o useAsyncData. A corrida (trocar de aba rápido) é resolvida pelo lastCallId dele.
+async function loadList() {
+  const profileResponse = await getPublicProfile(route.params.username)
+  const person = profileResponse.data
+  const listResponse = props.kind === 'followers' ? await getFollowers(person.id) : await getFollowing(person.id)
+  return { data: { person, people: listResponse.data || [] } }
+}
+
+const { data, error, isLoading } = useAsyncData(loadList, {
+  initialData: { person: null, people: [] },
+  watch: () => [props.kind, route.params.username],
+})
+
+const person = computed(() => data.value.person)
+const people = computed(() => data.value.people)
 const displayName = computed(() => person.value?.fullName || person.value?.username || username.value)
 const title = computed(() => (props.kind === 'followers' ? 'Seguidores' : 'Seguindo'))
 const emptyMessage = computed(() =>
@@ -45,50 +56,20 @@ const emptyMessage = computed(() =>
     ? `Ninguém segue ${displayName.value} ainda.`
     : `${displayName.value} ainda não segue ninguém.`
 )
-
-async function loadList() {
-  const callId = ++lastCallId
-  const name = username.value
-  if (!name) return
-
-  isLoading.value = true
-  errorMessage.value = ''
-  people.value = []
-
-  try {
-    // 1. username → perfil (e o id)
-    const profileResponse = await getPublicProfile(name)
-    if (callId !== lastCallId) return
-    person.value = profileResponse.data
-
-    // 2. id → lista
-    const listResponse =
-      props.kind === 'followers'
-        ? await getFollowers(person.value.id)
-        : await getFollowing(person.value.id)
-    if (callId !== lastCallId) return
-    people.value = listResponse.data || []
-  } catch (error) {
-    if (callId !== lastCallId) return
-    person.value = null
-    errorMessage.value =
-      error.status === 404
-        ? `O usuário @${name} não foi encontrado.`
-        : error.message || 'Não foi possível carregar a lista.'
-  } finally {
-    if (callId === lastCallId) isLoading.value = false
-  }
-}
-
-watch(() => [props.kind, route.params.username], loadList, { immediate: true })
+const errorText = computed(() => {
+  if (!error.value) return ''
+  return error.value.status === 404
+    ? `O usuário @${username.value} não foi encontrado.`
+    : error.value.message || 'Não foi possível carregar a lista.'
+})
 </script>
 
 <template>
   <div class="ps-page">
     <!-- Erro (ex.: username inexistente) -->
-    <div v-if="errorMessage && !isLoading" class="ps-empty">
+    <div v-if="errorText && !isLoading" class="ps-empty">
       <div class="ps-empty__icon"><i class="bi bi-person-x"></i></div>
-      <h2 class="h4 fw-bold">{{ errorMessage }}</h2>
+      <h2 class="h4 fw-bold">{{ errorText }}</h2>
       <p class="text-muted">Confira o nome de usuário ou volte para o início.</p>
       <RouterLink to="/" class="ps-btn ps-btn--primary mt-2"><i class="bi bi-house"></i> Ir para o início</RouterLink>
     </div>

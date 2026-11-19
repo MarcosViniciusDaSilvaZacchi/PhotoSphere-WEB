@@ -8,29 +8,13 @@
  * (a exclusão apaga as curtidas na mesma transação).
  */
 
-import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getLikedPhotos } from '@/services/likeService'
+import { useAsyncData } from '@/composables/useAsyncData'
 import PhotoCard from '@/components/PhotoCard.vue'
 
-const photos = ref([])
-const isLoading = ref(true)
-const errorMessage = ref('')
-
-async function loadLiked() {
-  isLoading.value = true
-  errorMessage.value = ''
-  try {
-    const response = await getLikedPhotos()
-    photos.value = response.data || []
-  } catch (error) {
-    errorMessage.value = error.message || 'Não foi possível carregar suas curtidas.'
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(loadLiked)
+// Aula 12: useAsyncData no lugar de isLoading / errorMessage / try-catch-finally
+const { data: photos, error, isLoading, execute: loadLiked } = useAsyncData(getLikedPhotos, { initialData: [] })
 </script>
 
 <template>
@@ -46,8 +30,8 @@ onMounted(loadLiked)
       </span>
     </header>
 
-    <div v-if="errorMessage" class="alert alert-danger d-flex align-items-center gap-2 border-0" role="alert">
-      <i class="bi bi-exclamation-triangle-fill"></i> {{ errorMessage }}
+    <div v-if="error" class="alert alert-danger d-flex align-items-center gap-2 border-0" role="alert">
+      <i class="bi bi-exclamation-triangle-fill"></i> {{ error.message || 'Não foi possível carregar suas curtidas.' }}
       <button type="button" class="ps-btn ps-btn--ghost ps-btn--sm ms-auto" @click="loadLiked">Tentar de novo</button>
     </div>
 
@@ -61,7 +45,7 @@ onMounted(loadLiked)
       </div>
     </div>
 
-    <div v-else-if="!errorMessage" class="ps-empty">
+    <div v-else-if="!error" class="ps-empty">
       <div class="ps-empty__icon"><i class="bi bi-heart"></i></div>
       <h2 class="h5 fw-bold">Você ainda não curtiu nenhuma foto</h2>
       <p class="text-muted">Toque no coração de uma foto para guardá-la aqui.</p>

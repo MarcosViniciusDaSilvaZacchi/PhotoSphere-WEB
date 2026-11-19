@@ -22,7 +22,7 @@
 
 - [X] `modules/follow/followModel.js` criado, com o índice único `idx_unique_follow_follower_following (follower_id, following_id)` e o índice simples `idx_follows_following_id (following_id)`
 - [X] Associações com apelidos declaradas em `config/associations.js` (`Follower` por `followerId`, `Following` por `followingId`)
-- [ ] Tabela `follows` e os dois índices conferidos no banco
+- [X] Tabela `follows` e os dois índices conferidos no banco
 
 **Etapa 2 — Service, Controller e Rotas**
 
@@ -38,14 +38,14 @@
 
 **Etapa 4 — Testando (contas A, B e C)**
 
-- [ ] `toggle-follow` sem token `401`; id `abc` `400`; seguir a si mesmo `400`; usuário `99999` `404`
-- [ ] A segue B `201` (`followersCount: 1`); A de novo `200` (`0`); de novo `201` (`1`); C segue B (`2`); B segue A
-- [ ] Contadores: B com 2 seguidores e 1 seguindo; A com 1 e 1; C com 0 e 1
-- [ ] `follow-status` e `isFollowing`: visitante `false`; A olhando B `true`; C olhando A `false`; B no próprio perfil `false` e `isOwner: true`
-- [ ] `followers` de B → C e A (mais recente primeiro); `following` de A → B; sem `password`; usuário inexistente `404`
-- [ ] Feed filtrado: sem token `401`; A vê só as fotos de B; `?page=2&limit=1` → `[]` (B com 1 foto); conta que não segue ninguém → `[]`
-- [ ] No banco, linha repetida em `follows` recusada (`Duplicate entry ... for key 'idx_unique_follow_follower_following'`)
-- [ ] Regressão: curtir, comentar, upload, edição e exclusão; `GET /feed` como antes
+- [X] `toggle-follow` sem token `401`; id `abc` `400`; seguir a si mesmo `400`; usuário `99999` `404`
+- [X] A segue B `201` (`followersCount: 1`); A de novo `200` (`0`); de novo `201` (`1`); C segue B (`2`); B segue A
+- [X] Contadores: B com 2 seguidores e 1 seguindo; A com 1 e 1; C com 0 e 1
+- [X] `follow-status` e `isFollowing`: visitante `false`; A olhando B `true`; C olhando A `false`; B no próprio perfil `false` e `isOwner: true`
+- [X] `followers` de B → C e A (mais recente primeiro); `following` de A → B; sem `password`; usuário inexistente `404`
+- [X] Feed filtrado: sem token `401`; A vê só as fotos de B; `?page=2&limit=1` → `[]` (B com 1 foto); conta que não segue ninguém → `[]`
+- [X] No banco, linha repetida em `follows` recusada (`Duplicate entry ... for key 'idx_unique_follow_follower_following'`)
+- [X] Regressão: curtir, comentar, upload, edição e exclusão; `GET /feed` como antes
 
 ---
 
@@ -83,12 +83,12 @@
 
 **Etapa 5 — Teste Prático Completo (só de clique em clique)**
 
-- [ ] Visitante (janela anônima): o botão aparece; o clique leva ao login e volta ao perfil depois de entrar
-- [ ] Logado: "Seguir" muda botão e contador do cartão na hora; F5 mantém; "Seguindo" desfaz
-- [ ] Slow 4G: mudança instantânea. Offline: muda, volta atrás e mostra a mensagem de erro
-- [ ] O contador nunca vai para `-1` ao seguir
-- [ ] No meu perfil não há botão de seguir; os números são links
-- [ ] Seguidores → Seguindo (aba) troca sem recarregar; clicar numa pessoa leva ao perfil dela; usuário inexistente mostra o erro; listas vazias mostram a mensagem
-- [ ] Trocar de uma pessoa que sigo para uma que não sigo: o botão reflete a pessoa nova
-- [ ] Pelo item "Seguindo" da Navbar: só fotos de quem eu sigo; deixar de seguir tira as fotos da pessoa
-- [ ] Regressão: Perfil (editar, fotos), Feed, Detalhe (curtir/comentar), Minhas Fotos, Curtidas, Login/Logout
+- [X] Visitante (janela anônima): o botão aparece; o clique leva ao login e volta ao perfil depois de entrar
+- [X] Logado: "Seguir" muda botão e contador do cartão na hora; F5 mantém; "Seguindo" desfaz
+- [X] Slow 4G: mudança instantânea. Offline: muda, volta atrás e mostra a mensagem de erro
+- [X] O contador nunca vai para `-1` ao seguir
+- [X] No meu perfil não há botão de seguir; os números são links
+- [X] Seguidores → Seguindo (aba) troca sem recarregar; clicar numa pessoa leva ao perfil dela; usuário inexistente mostra o erro; listas vazias mostram a mensagem
+- [X] Trocar de uma pessoa que sigo para uma que não sigo: o botão reflete a pessoa nova
+- [X] Pelo item "Seguindo" da Navbar: só fotos de quem eu sigo; deixar de seguir tira as fotos da pessoa
+- [X] Regressão: Perfil (editar, fotos), Feed, Detalhe (curtir/comentar), Minhas Fotos, Curtidas, Login/Logout

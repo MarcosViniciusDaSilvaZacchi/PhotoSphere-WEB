@@ -13,16 +13,21 @@
  *   Nunca v-html: um comentário como <img src=x onerror="..."> seria executado
  *   no navegador de todo mundo que abrisse a foto (XSS armazenado).
  *   As quebras de linha são preservadas via CSS (white-space: pre-wrap).
+ *
+ * Aula 12: lista pelo useAsyncData; falha ao publicar vira toast do interceptor
+ * (o formulário só mostra os erros de validação do próprio cliente).
  */
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { getComments, createComment } from '@/services/commentService'
 import { useAuth } from '@/composables/useAuth'
+import { useAsyncData } from '@/composables/useAsyncData'
 import { getProfilePictureUrl } from '@/utils/media'
 import { formatRelativeTime, formatDateTime, pluralize } from '@/utils/format'
+import { LIMITS } from '@/config/constants'
 
-const COMMENT_MAX = 500 // espelha VALIDATION.COMMENT_MAX da API
+const COMMENT_MAX = LIMITS.COMMENT_MAX // Aula 12: vem de config/constants.js (igual à API)
 
 const props = defineProps({
   photoId: { type: [Number, String], required: true },
@@ -33,9 +38,11 @@ const emit = defineEmits(['count-change'])
 const route = useRoute()
 const { isAuthenticated, user } = useAuth()
 
-const comments = ref([])
-const isLoading = ref(true)
-const loadError = ref('')
+// Aula 12: a lista é uma leitura → useAsyncData (erro mostrado no lugar da lista, sem toast)
+const { data: comments, error: loadError, isLoading, execute: loadComments } = useAsyncData(
+  () => getComments(props.photoId),
+  { initialData: [], watch: () => props.photoId }
+)
 
 const content = ref('')
 const formError = ref('')
@@ -43,19 +50,6 @@ const isSending = ref(false)
 const newCommentId = ref(null)
 
 const remaining = computed(() => COMMENT_MAX - content.value.length)
-
-async function loadComments() {
-  isLoading.value = true
-  loadError.value = ''
-  try {
-    const response = await getComments(props.photoId)
-    comments.value = response.data || []
-  } catch (error) {
-    loadError.value = error.message || 'Não foi possível carregar os comentários.'
-  } finally {
-    isLoading.value = false
-  }
-}
 
 function validate() {
   const text = content.value.trim()
@@ -71,12 +65,13 @@ async function handleSubmit() {
   isSending.value = true
   try {
     const response = await createComment(props.photoId, content.value.trim())
-    comments.value.unshift(response.data) // novo no topo
+    comments.value = [response.data, ...comments.value] // novo no topo
     newCommentId.value = response.data.id
     content.value = ''
     emit('count-change', comments.value.length)
-  } catch (error) {
-    formError.value = error.message || 'Não foi possível publicar o comentário.'
+  } catch {
+    // Publicar é uma AÇÃO: se falhar (ex.: Offline), o toast do interceptor avisa
+    // e o texto continua no campo para a pessoa tentar de novo.
   } finally {
     isSending.value = false
   }
@@ -86,8 +81,6 @@ async function handleSubmit() {
 function onKeydown(event) {
   if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) handleSubmit()
 }
-
-watch(() => props.photoId, loadComments, { immediate: true })
 </script>
 
 <template>
@@ -141,7 +134,7 @@ watch(() => props.photoId, loadComments, { immediate: true })
     </div>
 
     <div v-else-if="loadError" class="text-center py-3">
-      <p class="text-danger small mb-2"><i class="bi bi-exclamation-circle me-1"></i>{{ loadError }}</p>
+      <p class="text-danger small mb-2"><i class="bi bi-exclamation-circle me-1"></i>{{ loadError.message || 'Não foi possível carregar os comentários.' }}</p>
       <button type="button" class="ps-btn ps-btn--ghost ps-btn--sm" @click="loadComments">
         <i class="bi bi-arrow-clockwise"></i> Tentar de novo
       </button>

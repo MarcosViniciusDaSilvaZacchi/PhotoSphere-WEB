@@ -5,6 +5,7 @@ import { getProfilePictureUrl } from '@/utils/media'
 import { useAuth } from '@/composables/useAuth'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import { STORAGE_KEYS, LIMITS } from '@/config/constants'
 
 const { user: authUser } = useAuth()
 
@@ -22,8 +23,8 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const fieldErrors = ref({})
 
-// Limite máximo de bio (espelha BIO_MAX do backend)
-const BIO_MAX = 255
+// Limite máximo de bio (Aula 12: vem de config/constants.js, igual à API)
+const BIO_MAX = LIMITS.BIO_MAX
 
 // Carrega os dados reais do perfil
 async function loadProfile() {
@@ -95,7 +96,7 @@ async function handleSubmit() {
     if (authUser.value) {
       authUser.value.fullName = updatedUser.fullName
       authUser.value.profilePicture = updatedUser.profilePicture
-      localStorage.setItem('user', JSON.stringify(authUser.value))
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(authUser.value))
     }
 
     // Limpa preview local já que o arquivo foi salvo no servidor
@@ -211,7 +212,7 @@ onUnmounted(() => {
                   class="form-control input-custom"
                   :class="{ 'is-invalid': fieldErrors.bio || bio.length > BIO_MAX }"
                   placeholder="Conte um pouco sobre sua paixão por fotografia..."
-                  maxlength="300"
+                  :maxlength="BIO_MAX"
                 ></textarea>
                 <div v-if="fieldErrors.bio" class="invalid-feedback">
                   {{ fieldErrors.bio }}

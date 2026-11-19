@@ -14,4 +14,11 @@ module.exports = {
     DESCRIPTION_MAX: 500,
     COMMENT_MAX: 500, // Aula 10: limite do texto de um comentário
   },
+
+  // Aula 12: paginação dos feeds — o "tamanho de página" deixa de ficar solto nos services
+  PAGINATION: {
+    DEFAULT_PAGE: 1,
+    DEFAULT_LIMIT: 12,
+    MAX_LIMIT: 50, // teto: ?limit=100000 não pode puxar a tabela inteira
+  },
 };

@@ -11,44 +11,18 @@
  *    "Seguindo" da navegação principal (o PhotoSphere não tem TheSidebar.vue;
  *    a navegação principal fica na AppNavbar). Rota /following, requiresAuth.
  *
- * Mesma estrutura do FeedView (Aula 08): page / hasMore / "Carregar mais".
+ * Mesma estrutura do FeedView: Aula 12 — os dois usam o usePaginatedList.
  */
-
-import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getFollowingPhotos } from '@/services/followService'
+import { usePaginatedList } from '@/composables/usePaginatedList'
+import { PAGE_SIZE } from '@/config/constants'
 import PhotoCard from '@/components/PhotoCard.vue'
 
-const photos = ref([])
-const page = ref(1)
-const limit = 6
-const loading = ref(false)
-const hasMore = ref(true)
-const errorMessage = ref('')
+const ERROR_TEXT = 'Falha ao carregar as fotos de quem você segue.'
 
-async function fetchPhotos(isLoadMore = false) {
-  if (loading.value) return
-  loading.value = true
-  errorMessage.value = ''
-
-  try {
-    const targetPage = isLoadMore ? page.value + 1 : 1
-    const response = await getFollowingPhotos(targetPage, limit)
-    const newPhotos = response.data || []
-
-    photos.value = isLoadMore ? [...photos.value, ...newPhotos] : newPhotos
-    page.value = targetPage
-    hasMore.value = newPhotos.length === limit
-  } catch (error) {
-    errorMessage.value = error.message || 'Falha ao carregar as fotos de quem você segue.'
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  fetchPhotos()
-})
+// Aula 12: page / hasMore / "Carregar mais" e os estados de carregamento/erro vêm do composable
+const { items: photos, hasMore, isLoading, isLoadingMore, error, loadMore, reload } = usePaginatedList(getFollowingPhotos)
 </script>
 
 <template>
@@ -64,26 +38,26 @@ onMounted(() => {
       </RouterLink>
     </header>
 
-    <div v-if="errorMessage" class="alert alert-danger d-flex align-items-center gap-2 border-0" role="alert">
+    <div v-if="error" class="alert alert-danger d-flex align-items-center gap-2 border-0" role="alert">
       <i class="bi bi-exclamation-triangle-fill"></i>
-      <div>{{ errorMessage }}</div>
-      <button type="button" class="ps-btn ps-btn--ghost ps-btn--sm ms-auto" @click="fetchPhotos()">Tentar de novo</button>
+      <div>{{ error.message || ERROR_TEXT }}</div>
+      <button type="button" class="ps-btn ps-btn--ghost ps-btn--sm ms-auto" @click="reload">Tentar de novo</button>
     </div>
 
     <!-- Carregando a primeira página -->
-    <div v-if="loading && photos.length === 0" class="ps-grid">
+    <div v-if="isLoading" class="ps-grid">
       <div v-for="n in 6" :key="n" class="ps-skeleton" style="height: 330px"></div>
     </div>
 
     <!-- Grade -->
     <div v-else-if="photos.length > 0" class="ps-grid">
-      <div v-for="(photo, i) in photos" :key="photo.id" class="ps-fade-up" :style="{ animationDelay: `${(i % limit) * 40}ms` }">
+      <div v-for="(photo, i) in photos" :key="photo.id" class="ps-fade-up" :style="{ animationDelay: `${(i % PAGE_SIZE) * 40}ms` }">
         <PhotoCard :photo="photo" />
       </div>
     </div>
 
     <!-- Vazio: não segue ninguém, ou quem segue ainda não publicou -->
-    <div v-else-if="!errorMessage" class="ps-empty">
+    <div v-else-if="!error" class="ps-empty">
       <div class="ps-empty__icon"><i class="bi bi-person-plus"></i></div>
       <h2 class="h5 fw-bold">Nada por aqui ainda</h2>
       <p class="text-muted">Siga pessoas para ver as fotos delas aqui. Comece pelo Feed e abra o perfil de quem você gostar.</p>
@@ -96,13 +70,13 @@ onMounted(() => {
     <div class="text-center pt-5">
       <button
         v-if="hasMore && photos.length > 0"
-        @click="fetchPhotos(true)"
-        :disabled="loading"
+        @click="loadMore"
+        :disabled="isLoadingMore"
         class="ps-btn ps-btn--ghost px-4"
       >
-        <span v-if="loading" class="spinner-border spinner-border-sm"></span>
+        <span v-if="isLoadingMore" class="spinner-border spinner-border-sm"></span>
         <i v-else class="bi bi-arrow-down-circle"></i>
-        {{ loading ? 'Carregando...' : 'Carregar mais' }}
+        {{ isLoadingMore ? 'Carregando...' : 'Carregar mais' }}
       </button>
 
       <p v-else-if="photos.length > 0 && !hasMore" class="text-muted small">

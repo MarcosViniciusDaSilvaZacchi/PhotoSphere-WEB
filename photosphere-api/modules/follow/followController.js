@@ -9,6 +9,7 @@
 
 const followService = require('./followService');
 const photoService = require('../photo/photoService');
+const { parsePagination } = require('../../utils/pagination');
 
 /**
  * Converte o id da URL para um inteiro positivo, ou lança 400.
@@ -58,8 +59,7 @@ exports.getFollowing = async (req, res) => {
 
 // GET /api/following-photos — feed só com as fotos de quem eu sigo
 exports.getFollowingPhotos = async (req, res) => {
-  const page = Number.parseInt(req.query.page, 10) || 1;
-  const limit = Number.parseInt(req.query.limit, 10) || 12;
+  const { page, limit } = parsePagination(req.query); // Aula 12: mesma regra do feed geral
   const photos = await photoService.getFollowingPhotos(req.user.id, page, limit);
   return res.success('Fotos de quem você segue obtidas com sucesso', photos);
 };
