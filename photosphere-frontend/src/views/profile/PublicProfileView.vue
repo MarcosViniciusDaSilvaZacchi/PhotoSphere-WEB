@@ -5,10 +5,14 @@
  * Rota pública /profile/:username. A API (optionalAuth) devolve o perfil,
  * a lista de fotos da pessoa (mais novas primeiro) e isOwner.
  *
- * Três situações para o botão do cabeçalho:
- *  - dono (isOwner)          → "Editar Perfil"
- *  - logado, mas outra pessoa → "Seguir" (ainda sem ação — chega numa aula futura)
- *  - visitante               → nenhum botão
+ * Botão do cabeçalho (Aula 11):
+ *  - dono (isOwner)  → "Editar Perfil"
+ *  - qualquer outro  → FollowButton (o visitante é levado ao login e volta para cá)
+ *
+ * O FollowButton é ligado por v-model ao próprio objeto do perfil
+ * (profile.isFollowing e profile.followersCount): quando o botão muda,
+ * o número "Seguidores" do cartão muda junto, sem recarregar.
+ * Os números "Seguidores"/"Seguindo" são links para as listas.
  *
  * O watch em route.params.username é essencial: ao ir de um perfil para outro,
  * o Vue Router REAPROVEITA este componente (mesma rota, parâmetro diferente),
@@ -19,19 +23,19 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { getPublicProfile } from '@/services/userService'
 import { getProfilePictureUrl } from '@/utils/media'
-import { useAuth } from '@/composables/useAuth'
 import PhotoCard from '@/components/PhotoCard.vue'
+import FollowButton from '@/components/FollowButton.vue'
 
 const route = useRoute()
-const { isAuthenticated } = useAuth()
 
 const profile = ref(null)
 const isOwner = ref(false)
 const isLoading = ref(true)
 const errorMessage = ref('')
-const followHint = ref(false)
 
 const photos = computed(() => profile.value?.photos || [])
+const followersRoute = computed(() => ({ name: 'profile-followers', params: { username: profile.value?.username } }))
+const followingRoute = computed(() => ({ name: 'profile-following', params: { username: profile.value?.username } }))
 
 async function loadProfile(username) {
   isLoading.value = true
@@ -50,12 +54,6 @@ async function loadProfile(username) {
   } finally {
     isLoading.value = false
   }
-}
-
-function handleFollow() {
-  // Botão visível desde já para o layout ficar completo; a ação chega com o módulo de seguidores
-  followHint.value = true
-  setTimeout(() => (followHint.value = false), 2500)
 }
 
 watch(
@@ -103,17 +101,23 @@ watch(
             <RouterLink v-if="isOwner" to="/profile/me" class="ps-btn ps-btn--ghost">
               <i class="bi bi-pencil-square"></i> Editar Perfil
             </RouterLink>
-            <button v-else-if="isAuthenticated" type="button" class="ps-btn ps-btn--primary" @click="handleFollow">
-              <i class="bi bi-person-plus"></i> Seguir
-            </button>
-            <small v-if="followHint" class="follow-hint">Seguir chega em breve ✨</small>
+            <FollowButton
+              v-else
+              :user-id="profile.id"
+              v-model:following="profile.isFollowing"
+              v-model:followers-count="profile.followersCount"
+            />
           </div>
         </div>
 
         <div class="profile-hero__stats">
           <div><strong>{{ profile.photosCount ?? photos.length }}</strong><span>Fotos</span></div>
-          <div><strong>{{ profile.followersCount || 0 }}</strong><span>Seguidores</span></div>
-          <div><strong>{{ profile.followingCount || 0 }}</strong><span>Seguindo</span></div>
+          <RouterLink :to="followersRoute" class="stat-link">
+            <strong>{{ profile.followersCount || 0 }}</strong><span>Seguidores</span>
+          </RouterLink>
+          <RouterLink :to="followingRoute" class="stat-link">
+            <strong>{{ profile.followingCount || 0 }}</strong><span>Seguindo</span>
+          </RouterLink>
         </div>
       </section>
 
@@ -176,7 +180,6 @@ watch(
 .profile-hero__bio { color: var(--ps-muted); margin: 0.6rem 0 0; max-width: 560px; }
 
 .profile-hero__action { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; padding-bottom: 0.4rem; }
-.follow-hint { color: var(--ps-muted); font-size: 0.78rem; }
 
 .profile-hero__stats {
   display: grid;
@@ -184,12 +187,12 @@ watch(
   margin-top: 1.5rem;
   border-top: 1px solid var(--ps-border);
 }
-.profile-hero__stats > div {
+.profile-hero__stats > * {
   padding: 1rem;
   text-align: center;
   border-right: 1px solid var(--ps-border);
 }
-.profile-hero__stats > div:last-child { border-right: 0; }
+.profile-hero__stats > *:last-child { border-right: 0; }
 .profile-hero__stats strong { display: block; font-size: 1.35rem; font-weight: 800; }
 .profile-hero__stats span { color: var(--ps-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
 </style>

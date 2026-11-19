@@ -5,13 +5,16 @@
  * Aula 08: detalhe (optionalAuth + isOwner + visualizações) e feed paginado
  * Aula 09: CRUD do dono — listar as minhas, buscar para edição, editar e excluir
  * Aula 10: isLiked no detalhe e exclusão em transação (curtidas + comentários)
+ * Aula 11: feed filtrado pelas pessoas que o usuário segue
  */
 
+const { Op } = require('sequelize');
 const sequelize = require('../../config/database');
 const Photo = require('./photoModel');
 const User = require('../user/userModel');
 const Like = require('../like/likeModel');
 const Comment = require('../comment/commentModel');
+const Follow = require('../follow/followModel');
 const { removeUpload } = require('../../utils/fileStorage');
 const { isDatabaseOffline } = require('../../utils/dbFallback');
 
@@ -138,6 +141,40 @@ async function getFeed(page = 1, limit = 10) {
     }
     throw dbError;
   }
+}
+
+/**
+ * GET /api/following-photos — feed só com as fotos de quem o usuário segue (Aula 11).
+ *
+ * Duas consultas:
+ *  1. os ids de quem eu sigo (só a coluna followingId, convertida num array de números);
+ *  2. o mesmo findAll do feed, filtrado com userId IN (...).
+ *
+ * Se eu não sigo ninguém, devolve [] CEDO: um "IN ()" vazio não tem o que buscar,
+ * e assim a segunda consulta nem vai ao banco.
+ *
+ * @param {number} userId - quem está vendo (req.user.id)
+ * @param {number} page
+ * @param {number} limit
+ */
+async function getFollowingPhotos(userId, page = 1, limit = 12) {
+  const follows = await Follow.findAll({
+    where: { followerId: userId },
+    attributes: ['followingId'],
+  });
+  const followedIds = follows.map((follow) => follow.followingId);
+
+  if (followedIds.length === 0) {
+    return [];
+  }
+
+  return Photo.findAll({
+    where: { userId: { [Op.in]: followedIds } },
+    order: [['createdAt', 'DESC'], ['id', 'DESC']],
+    limit,
+    offset: (page - 1) * limit,
+    include: [authorInclude],
+  });
 }
 
 /**
@@ -319,6 +356,7 @@ module.exports = {
   createPhoto,
   listPhotos: getFeed, // alias
   getFeed,
+  getFollowingPhotos,
   getPhotoDetails,
   getPhotoById,
   getMyPhotos,

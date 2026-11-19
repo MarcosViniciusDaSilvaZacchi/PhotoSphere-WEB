@@ -10,6 +10,7 @@
  *  - ao trocar de rota (watch na rota, cobre o botão Voltar do navegador).
  *
  * Aula 10: atalho de UM clique para as Fotos Curtidas (coração), além do item no menu.
+ * Aula 11: item "Seguindo" na navegação principal → /following (feed de quem eu sigo).
  */
 
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
@@ -70,6 +71,10 @@ async function handleLogout() {
         </RouterLink>
         <RouterLink v-if="isAuthenticated" to="/feed" class="nav-link-ps" active-class="is-active">
           <i class="bi bi-grid-3x3-gap"></i><span>Feed</span>
+        </RouterLink>
+        <!-- Aula 11: feed de quem eu sigo (o "item Seguindo da Sidebar" do roteiro) -->
+        <RouterLink v-if="isAuthenticated" to="/following" class="nav-link-ps" active-class="is-active">
+          <i class="bi bi-people"></i><span>Seguindo</span>
         </RouterLink>
       </nav>
 

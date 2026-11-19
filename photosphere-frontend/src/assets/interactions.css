@@ -1,5 +1,5 @@
 /**
- * src/assets/interactions.css — Curtidas e comentários (Aula 10).
+ * src/assets/interactions.css — Curtidas e comentários (Aula 10) e seguir (Aula 11).
  */
 
 /* ─── Botão de curtir ─────────────────────────────────────────────────────── */
@@ -99,3 +99,87 @@
   from { background: rgba(255, 102, 34, 0.18); transform: translateY(-4px); }
   to { background: var(--ps-surface-2); transform: none; }
 }
+
+/* ═══ Aula 11: seguir ══════════════════════════════════════════════════════ */
+
+/* ─── Botão de seguir ─────────────────────────────────────────────────────── */
+.follow-wrapper { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; }
+
+.follow-btn { min-width: 9.5rem; justify-content: center; }
+.follow-btn:disabled { cursor: progress; }
+.follow-btn.is-following .follow-btn__icon { color: var(--brand-color); }
+
+/* "Seguindo" vira "Deixar de seguir" ao passar o mouse (padrão das redes sociais) */
+.follow-btn__label { display: inline-flex; align-items: center; gap: 0.45rem; }
+.follow-btn__hover { display: none; }
+.follow-btn.is-following:hover:not(:disabled) { border-color: rgba(255, 90, 95, 0.55); color: #ff8a8e; }
+.follow-btn.is-following:hover:not(:disabled) .follow-btn__label { display: none; }
+.follow-btn.is-following:hover:not(:disabled) .follow-btn__hover { display: inline-flex; align-items: center; gap: 0.45rem; }
+
+.follow-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 240px;
+  font-size: 0.8rem;
+  text-align: right;
+  color: #ff8a8e;
+}
+
+/* ─── Números do perfil como links ────────────────────────────────────────── */
+.stat-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+.stat-link:hover { background: var(--ps-surface-2); }
+.stat-link:hover strong { color: var(--brand-color-light); }
+
+/* ─── Abas Seguidores / Seguindo ──────────────────────────────────────────── */
+.ps-tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--ps-border);
+  border-radius: 999px;
+  background: var(--ps-surface);
+}
+.ps-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  color: var(--ps-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s, background-color 0.2s;
+}
+.ps-tab:hover { color: var(--ps-text); }
+.ps-tab.is-active { color: #fff; background: var(--brand-color); }
+
+/* ─── Lista de pessoas ────────────────────────────────────────────────────── */
+.people-list { display: flex; flex-direction: column; gap: 0.6rem; max-width: 720px; }
+
+.person-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--ps-border);
+  border-radius: var(--ps-radius);
+  background: var(--ps-surface);
+  color: var(--ps-text);
+  text-decoration: none;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.person-row:hover { border-color: rgba(255, 102, 34, 0.45); transform: translateX(3px); }
+.person-row__avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.person-row__info { min-width: 0; flex: 1; }
+.person-row__name { display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.person-row__username { color: var(--brand-color-light); font-size: 0.85rem; font-weight: 600; }
+.person-row__bio { margin: 0.15rem 0 0; color: var(--ps-muted); font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.person-row__chevron { color: var(--ps-muted); }

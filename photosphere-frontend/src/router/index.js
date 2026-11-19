@@ -17,6 +17,8 @@ import PublicProfileView from '@/views/profile/PublicProfileView.vue'   // Aula 
 import MyPhotosView      from '@/views/MyPhotosView.vue'                 // Aula 09
 import EditPhotoView     from '@/views/EditPhotoView.vue'                // Aula 09
 import LikedPhotosView   from '@/views/LikedPhotosView.vue'              // Aula 10
+import FollowListView    from '@/views/FollowListView.vue'               // Aula 11
+import FollowingFeedView from '@/views/FollowingFeedView.vue'            // Aula 11
 import SettingsView      from '@/views/SettingsView.vue'
 
 // ── Rotas de Administrador ──────────────────────────────────────────────────
@@ -60,6 +62,13 @@ const router = createRouter({
       path: '/feed',
       name: 'feed',
       component: FeedView,
+      meta: { requiresAuth: true },
+    },
+    {
+      // Aula 11: feed só com as fotos de quem eu sigo — mesmo path do item "Seguindo" da Navbar
+      path: '/following',
+      name: 'following-feed',
+      component: FollowingFeedView,
       meta: { requiresAuth: true },
     },
     {
@@ -115,6 +124,20 @@ const router = createRouter({
       path: '/profile/:username', // ex: /profile/markv
       name: 'profile',
       component: PublicProfileView,
+    },
+    {
+      // Aula 11: UMA tela, DUAS rotas — a diferença chega como prop (kind), vinda daqui.
+      // Públicas, como o perfil: visitante também vê quem segue quem.
+      path: '/profile/:username/followers',
+      name: 'profile-followers',
+      component: FollowListView,
+      props: { kind: 'followers' },
+    },
+    {
+      path: '/profile/:username/following',
+      name: 'profile-following',
+      component: FollowListView,
+      props: { kind: 'following' },
     },
     {
       path: '/settings',

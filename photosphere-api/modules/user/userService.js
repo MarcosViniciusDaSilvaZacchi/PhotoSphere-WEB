@@ -150,6 +150,14 @@ async function getPublicProfile(username, currentUserId = null) {
   const profile = user.toJSON();
   profile.isOwner = currentUserId ? Number(currentUserId) === Number(profile.id) : false;
 
+  // Aula 11: "eu sigo esta pessoa?" — só consulta o banco quando há alguém logado
+  // e esse alguém NÃO é o dono do perfil; nos outros casos, false.
+  profile.isFollowing = false;
+  if (currentUserId && !profile.isOwner) {
+    const { isFollowing } = require('../follow/followService');
+    profile.isFollowing = await isFollowing(currentUserId, profile.id);
+  }
+
   return profile;
 }
 

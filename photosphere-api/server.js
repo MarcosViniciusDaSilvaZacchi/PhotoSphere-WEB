@@ -14,6 +14,7 @@ const userRoutes = require('./modules/user/userRoutes');       // E3: módulo de
 const photoRoutes = require('./modules/photo/photoRoutes');     // E7: módulo da entidade principal (Photo)
 const likeRoutes = require('./modules/like/likeRoutes');         // E10: curtidas
 const commentRoutes = require('./modules/comment/commentRoutes'); // E10: comentários
+const followRoutes = require('./modules/follow/followRoutes');    // E11: seguir
 const errorHandler = require('./middlewares/errorHandler');   // E3: tratamento global de erros
 const sequelize = require('./config/database');               // E3: conexão MySQL
 require('./config/associations');                             // E7: relacionamentos carregados antes do sync
@@ -59,6 +60,9 @@ app.use('/api', likeRoutes);
 
 // Módulo de comentários (E10): POST e GET /api/photos/:photoId/comments
 app.use('/api', commentRoutes);
+
+// Módulo de seguir (E11): toggle-follow, follow-status, followers, following e GET /api/following-photos
+app.use('/api', followRoutes);
 
 // Rota 404 — qualquer endereço não mapeado cai aqui
 app.use((req, res) => {
