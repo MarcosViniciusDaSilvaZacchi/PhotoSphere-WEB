@@ -16,6 +16,8 @@ const likeRoutes = require('./modules/like/likeRoutes');         // E10: curtida
 const commentRoutes = require('./modules/comment/commentRoutes'); // E10: comentários
 const followRoutes = require('./modules/follow/followRoutes');    // E11: seguir
 const albumRoutes = require('./modules/album/albumRoutes');       // E13: álbuns (coleções)
+const notificationRoutes = require('./modules/notification/notificationRoutes'); // E14: notificações
+const reportRoutes = require('./modules/report/reportRoutes');    // E14: denúncias
 const errorHandler = require('./middlewares/errorHandler');   // E3: tratamento global de erros
 const sequelize = require('./config/database');               // E3: conexão MySQL
 require('./config/associations');                             // E7: relacionamentos carregados antes do sync
@@ -25,10 +27,16 @@ const PORT = process.env.PORT || 3000;
 
 // ─── Middlewares globais ────────────────────────────────────────────────────
 
-// CORS: autoriza apenas o frontend (definido no .env) a chamar esta API
+// CORS: autoriza apenas o frontend (definido no .env) a chamar esta API.
+// Aula 14: o cors precisa vir ANTES dos parsers (express.json). Se o express.json
+// rodar antes e recusar o corpo (ex.: o "null" que o logout mandava), a resposta
+// 400 sai SEM o cabeçalho Access-Control-Allow-Origin — e o navegador mostra um
+// "erro de CORS" no lugar do 400 verdadeiro. Neste projeto a ordem já estava certa
+// desde a Aula 01; o comentário fica para ninguém inverter.
+// PATCH entrou na lista para a rota de marcar notificação como lida.
 app.use(cors({
   origin: process.env.FRONTEND_URL,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
@@ -67,6 +75,10 @@ app.use('/api', followRoutes);
 
 // Módulo de álbuns (E13): my-albums, albums (CRUD + fotos) e /photos/:photoId/albums-status
 app.use('/api', albumRoutes);
+
+// Módulos de notificações e denúncias (E14)
+app.use('/api', notificationRoutes);
+app.use('/api', reportRoutes);
 
 // Rota 404 — qualquer endereço não mapeado cai aqui
 app.use((req, res) => {

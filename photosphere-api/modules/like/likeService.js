@@ -13,6 +13,8 @@ const Like = require('./likeModel');
 const Photo = require('../photo/photoModel');
 const User = require('../user/userModel');
 const { httpError } = require('../../utils/httpError'); // Aula 13: utilitário compartilhado
+const { createNotification, removeNotification } = require('../notification/notificationService');
+const { NOTIFICATION } = require('../../config/constants'); // Aula 14
 
 const AUTHOR_ATTRIBUTES = ['id', 'username', 'fullName', 'profilePicture'];
 
@@ -20,6 +22,9 @@ const AUTHOR_ATTRIBUTES = ['id', 'username', 'fullName', 'profilePicture'];
 /**
  * POST /api/photos/:photoId/toggle-like
  * Curte se ainda não curtiu; descurte se já curtiu.
+ *
+ * Aula 14: TRÊS escritas na mesma transação — a linha em "likes", o likesCount
+ * e o aviso para o dono da foto (criado ao curtir, apagado ao descurtir).
  *
  * @param {number} userId  - quem está curtindo (req.user.id)
  * @param {number} photoId - foto alvo (req.params.photoId)
@@ -41,10 +46,19 @@ async function toggleLike(userId, photoId) {
     if (existing) {
       await existing.destroy({ transaction: t });
       await photo.decrement('likesCount', { by: 1, transaction: t });
+      await removeNotification(
+        { userId: photo.userId, actorId: userId, type: NOTIFICATION.TYPES.LIKE, photoId: photo.id },
+        t
+      );
       liked = false;
     } else {
       await Like.create({ userId, photoId }, { transaction: t });
       await photo.increment('likesCount', { by: 1, transaction: t });
+      // o aviso vai para o DONO da foto; curtir a própria foto não avisa ninguém
+      await createNotification(
+        { userId: photo.userId, actorId: userId, type: NOTIFICATION.TYPES.LIKE, photoId: photo.id },
+        t
+      );
       liked = true;
     }
 

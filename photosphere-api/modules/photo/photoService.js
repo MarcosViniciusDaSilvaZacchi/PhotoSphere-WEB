@@ -7,6 +7,7 @@
  * Aula 10: isLiked no detalhe e exclusão em transação (curtidas + comentários)
  * Aula 11: feed filtrado pelas pessoas que o usuário segue
  * Aula 13: a exclusão também tira a foto dos álbuns e desconta o contador de cada um
+ * Aula 14: e apaga as denúncias e as notificações da foto (filhas antes do pai)
  */
 
 const { Op } = require('sequelize');
@@ -18,6 +19,8 @@ const Comment = require('../comment/commentModel');
 const Follow = require('../follow/followModel');
 const Album = require('../album/albumModel');
 const AlbumPhoto = require('../album/albumPhotoModel');
+const Report = require('../report/reportModel');
+const Notification = require('../notification/notificationModel');
 const { removeUpload } = require('../../utils/fileStorage');
 const { isDatabaseOffline } = require('../../utils/dbFallback');
 const { PAGINATION } = require('../../config/constants');
@@ -357,6 +360,11 @@ async function deletePhoto(id, userId) {
       await Album.decrement('photosCount', { by: 1, where: { id: entry.albumId }, transaction: t });
     }
     await AlbumPhoto.destroy({ where: { photoId: photo.id }, transaction: t });
+
+    // Aula 14: denúncias (ON DELETE NO ACTION — sem isto o banco RECUSA apagar a foto)
+    // e notificações (ON DELETE SET NULL — sem isto sobrariam avisos órfãos, com photo_id NULL)
+    await Report.destroy({ where: { photoId: photo.id }, transaction: t });
+    await Notification.destroy({ where: { photoId: photo.id }, transaction: t });
 
     await photo.destroy({ transaction: t });
     await User.decrement('photosCount', {

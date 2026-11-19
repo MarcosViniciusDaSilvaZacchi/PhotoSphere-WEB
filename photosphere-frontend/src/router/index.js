@@ -19,6 +19,7 @@ import EditPhotoView     from '@/views/EditPhotoView.vue'                // Aula
 import LikedPhotosView   from '@/views/LikedPhotosView.vue'              // Aula 10
 import FollowListView    from '@/views/FollowListView.vue'               // Aula 11
 import FollowingFeedView from '@/views/FollowingFeedView.vue'            // Aula 11
+import NotificationsView from '@/views/NotificationsView.vue'            // Aula 14
 import SettingsView      from '@/views/SettingsView.vue'
 
 // ── Rotas de Administrador ──────────────────────────────────────────────────
@@ -112,6 +113,12 @@ const router = createRouter({
       path: '/liked',            // Aula 10: Fotos Curtidas (um clique pelo coração da Navbar)
       name: 'liked-photos',
       component: LikedPhotosView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/notifications',    // Aula 14: lista de notificações (o sino da Navbar usa { name: 'notifications' })
+      name: 'notifications',
+      component: NotificationsView,
       meta: { requiresAuth: true },
     },
     {

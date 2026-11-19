@@ -7,6 +7,8 @@ const Comment = require('./commentModel');
 const Photo = require('../photo/photoModel');
 const User = require('../user/userModel');
 const { httpError } = require('../../utils/httpError'); // Aula 13: utilitário compartilhado
+const { createNotification } = require('../notification/notificationService'); // Aula 14
+const { NOTIFICATION } = require('../../config/constants');
 
 const authorInclude = {
   model: User,
@@ -18,6 +20,8 @@ const authorInclude = {
 /**
  * POST /api/photos/:photoId/comments
  * Cria o comentário e incrementa commentsCount na MESMA transação.
+ * Aula 14: o aviso para o dono da foto nasce na mesma transação (só criar —
+ * a API não exclui comentários, então não há "desfazer").
  * Devolve o comentário já com o autor — o frontend precisa dele para
  * mostrar o comentário novo no topo sem recarregar a lista.
  *
@@ -34,6 +38,10 @@ async function createComment(userId, photoId, content) {
 
     const comment = await Comment.create({ userId, photoId, content }, { transaction: t });
     await photo.increment('commentsCount', { by: 1, transaction: t });
+    await createNotification(
+      { userId: photo.userId, actorId: userId, type: NOTIFICATION.TYPES.COMMENT, photoId: photo.id },
+      t
+    );
 
     return Comment.findByPk(comment.id, {
       include: [authorInclude],

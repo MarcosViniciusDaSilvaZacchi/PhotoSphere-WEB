@@ -30,5 +30,8 @@ export function register(userData) {
  * Encerra a sessão do usuário.
  */
 export function logout() {
-  return api.post('/logout', null, { silent: true })
+  // Aula 14: undefined (e não null) no corpo. Com null, o Axios enviava o texto "null"
+  // como JSON; o express.json (modo strict) recusava com 400, e o Console mostrava
+  // um erro vermelho a cada logout. Com undefined, a requisição vai sem corpo.
+  return api.post('/logout', undefined, { silent: true })
 }

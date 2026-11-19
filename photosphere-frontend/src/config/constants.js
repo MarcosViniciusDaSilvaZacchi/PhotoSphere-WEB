@@ -33,6 +33,28 @@ export const SEARCH = {
   DEBOUNCE_MS: 400,
 }
 
+// Aula 14: notificações — o sino pergunta o número de não lidas a cada 30 s
+export const NOTIFICATIONS = {
+  POLL_MS: 30000,
+}
+
+// Aula 14: texto de cada tipo de notificação (a chave é o "type" que vem da API)
+export const NOTIFICATION_TEXT = {
+  like: 'curtiu sua foto',
+  comment: 'comentou na sua foto',
+  follow: 'começou a seguir você',
+}
+
+// Aula 14: os cinco motivos de denúncia, na ordem — value = chave guardada no banco,
+// label = o que a tela mostra (iguais a REPORT.REASONS da API)
+export const REPORT_REASONS = [
+  { value: 'inappropriate_content', label: 'Conteúdo impróprio' },
+  { value: 'harassment', label: 'Assédio ou discurso de ódio' },
+  { value: 'spam', label: 'Spam ou golpes' },
+  { value: 'copyright', label: 'Violação de direitos autorais' },
+  { value: 'other', label: 'Outro' },
+]
+
 // Itens por página nos feeds (a API aceita até PAGINATION.MAX_LIMIT = 50)
 export const PAGE_SIZE = 12
 

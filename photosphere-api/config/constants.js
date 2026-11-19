@@ -26,6 +26,21 @@ module.exports = {
     LIMIT: 10,       // máximo de fotos e de pessoas por resposta
   },
 
+  // Aula 14: tipos de notificação (as três ações que geram aviso para o dono)
+  NOTIFICATION: {
+    TYPES: {
+      LIKE: 'like',
+      COMMENT: 'comment',
+      FOLLOW: 'follow',
+    },
+  },
+
+  // Aula 14: os cinco motivos de denúncia — FIXOS para todos os projetos
+  // (a Aula 15 lê as denúncias com esta mesma lista)
+  REPORT: {
+    REASONS: ['inappropriate_content', 'harassment', 'spam', 'copyright', 'other'],
+  },
+
   // Aula 12: paginação dos feeds — o "tamanho de página" deixa de ficar solto nos services
   PAGINATION: {
     DEFAULT_PAGE: 1,

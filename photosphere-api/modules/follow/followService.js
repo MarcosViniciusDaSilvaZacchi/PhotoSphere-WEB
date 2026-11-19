@@ -1,11 +1,12 @@
 /**
  * modules/follow/followService.js — Regras de negócio de "seguir" (Aula 11).
  *
- * Seguir é uma relação USUÁRIO ↔ USUÁRIO. Cada seguida mexe em TRÊS lugares:
+ * Seguir é uma relação USUÁRIO ↔ USUÁRIO. Cada seguida mexe em QUATRO lugares:
  *  1. a linha em "follows";
  *  2. followersCount de QUEM É SEGUIDO (ganhou um seguidor);
- *  3. followingCount de QUEM SEGUE (passou a seguir mais um).
- * As três escritas rodam numa única transação, e TODO comando recebe
+ *  3. followingCount de QUEM SEGUE (passou a seguir mais um);
+ *  4. (Aula 14) o aviso para quem foi seguido — criado ao seguir, apagado ao deixar de seguir.
+ * As quatro escritas rodam numa única transação, e TODO comando recebe
  * { transaction: t } — senão roda fora dela e não é desfeito no rollback.
  *
  * Os ids chegam aqui JÁ CONVERTIDOS para número (parseUserId no controller).
@@ -15,6 +16,8 @@ const sequelize = require('../../config/database');
 const Follow = require('./followModel');
 const User = require('../user/userModel');
 const { httpError } = require('../../utils/httpError'); // Aula 13: utilitário compartilhado
+const { createNotification, removeNotification } = require('../notification/notificationService');
+const { NOTIFICATION } = require('../../config/constants'); // Aula 14
 
 // Atributos públicos de uma pessoa nas listas — nunca senha, e-mail ou flags internas
 const PUBLIC_USER_ATTRIBUTES = ['id', 'username', 'fullName', 'profilePicture', 'bio'];
@@ -58,10 +61,12 @@ async function toggleFollow(followerId, followingId) {
       // followersCount sobe no SEGUIDO; followingCount sobe em QUEM SEGUE
       await User.increment('followersCount', { by: 1, where: { id: followingId }, transaction: t });
       await User.increment('followingCount', { by: 1, where: { id: followerId }, transaction: t });
+      await createNotification({ userId: followingId, actorId: followerId, type: NOTIFICATION.TYPES.FOLLOW }, t);
     } else {
       await follow.destroy({ transaction: t });
       await User.decrement('followersCount', { by: 1, where: { id: followingId }, transaction: t });
       await User.decrement('followingCount', { by: 1, where: { id: followerId }, transaction: t });
+      await removeNotification({ userId: followingId, actorId: followerId, type: NOTIFICATION.TYPES.FOLLOW }, t);
     }
 
     // increment/decrement não atualizam a instância em memória — relê dentro da transação

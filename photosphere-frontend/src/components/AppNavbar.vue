@@ -12,19 +12,42 @@
  * Aula 10: atalho de UM clique para as Fotos Curtidas (coração), além do item no menu.
  * Aula 11: item "Seguindo" na navegação principal → /following (feed de quem eu sigo).
  * Aula 13: barra de busca (Enter → /search?q=), item "Explorar" e "Meus Álbuns" no menu.
+ * Aula 14: sino com o número de não lidas. A Navbar liga o polling quando a pessoa
+ * entra na conta (watch imediato) e desliga ao sair e ao ser desmontada.
  */
 
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, onUnmounted } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useClickOutside } from '@/composables/useClickOutside'
 import { getProfilePictureUrl } from '@/utils/media'
+import { useNotificationsStore } from '@/stores/notifications'
 
 const router = useRouter()
 const route = useRoute()
 const { isAuthenticated, user, logout } = useAuth()
 
 // ─── Menu do avatar ──────────────────────────────────────────────────────────
+// ─── Sino (Aula 14) ──────────────────────────────────────────────────────────
+const notificationsStore = useNotificationsStore()
+const unreadCount = computed(() => notificationsStore.unreadCount)
+const badgeText = computed(() => (unreadCount.value > 99 ? '99+' : String(unreadCount.value)))
+const bellLabel = computed(() =>
+  unreadCount.value > 0
+    ? `Notificações (${unreadCount.value} não ${unreadCount.value === 1 ? 'lida' : 'lidas'})`
+    : 'Notificações'
+)
+
+watch(
+  isAuthenticated,
+  (logged) => {
+    if (logged) notificationsStore.startPolling()
+    else notificationsStore.stopPolling()
+  },
+  { immediate: true }
+)
+onUnmounted(() => notificationsStore.stopPolling())
+
 // ─── Busca (Aula 13) ─────────────────────────────────────────────────────────
 const searchText = ref('')
 
@@ -101,8 +124,24 @@ async function handleLogout() {
 
       <div class="nav-actions">
         <template v-if="isAuthenticated">
+          <!-- Aula 14: sino, só para quem está logado; o selo só aparece com não lidas -->
+          <RouterLink
+            :to="{ name: 'notifications' }"
+            class="icon-link icon-link--bell position-relative"
+            active-class="is-active"
+            :aria-label="bellLabel"
+            :title="bellLabel"
+          >
+            <i class="bi bi-bell"></i>
+            <span
+              v-if="unreadCount > 0"
+              class="bell-badge position-absolute top-0 start-100 translate-middle"
+              aria-hidden="true"
+            >{{ badgeText }}</span>
+          </RouterLink>
+
           <!-- Aula 10: Fotos Curtidas em um clique -->
-          <RouterLink to="/liked" class="icon-link" active-class="is-active" title="Fotos Curtidas" aria-label="Fotos Curtidas">
+          <RouterLink to="/liked" class="icon-link icon-link--heart" active-class="is-active" title="Fotos Curtidas" aria-label="Fotos Curtidas">
             <i class="bi bi-heart"></i>
           </RouterLink>
 
@@ -270,9 +309,25 @@ async function handleLogout() {
   text-decoration: none;
   transition: color 0.2s, background-color 0.2s;
 }
-.icon-link:hover { color: #ff4d67; background: var(--ps-surface-2); }
-.icon-link.is-active { color: #ff4d67; background: rgba(255, 77, 103, 0.12); }
-.icon-link.is-active i::before { content: '\f415'; } /* bi-heart-fill */
+.icon-link--heart:hover { color: #ff4d67; background: var(--ps-surface-2); }
+.icon-link--heart.is-active { color: #ff4d67; background: rgba(255, 77, 103, 0.12); }
+.icon-link--heart.is-active i::before { content: '\f415'; } /* bi-heart-fill */
+
+/* ─── Sino (Aula 14) ────────────────────────────────────────────────────── */
+.icon-link--bell:hover { color: var(--brand-color); background: var(--ps-surface-2); }
+.icon-link--bell.is-active { color: var(--brand-color); background: rgba(255, 102, 34, 0.12); }
+.bell-badge {
+  min-width: 1.15rem;
+  padding: 0.1rem 0.32rem;
+  border-radius: 999px;
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--ps-bg);
+}
 
 /* ─── Avatar + dropdown ───────────────────────────────────────────────────── */
 .avatar-menu { position: relative; }

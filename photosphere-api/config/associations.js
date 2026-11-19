@@ -15,6 +15,8 @@
  * saberia se um include de User significa "quem segue" ou "quem é seguido".
  *
  * Aula 13: Album e a junção AlbumPhoto (muitos-para-muitos entre álbum e foto).
+ *
+ * Aula 14: Notification (apelidos Recipient/Actor) e Report (apelido Reporter).
  */
 
 const User = require('../modules/user/userModel');
@@ -24,6 +26,8 @@ const Comment = require('../modules/comment/commentModel');
 const Follow = require('../modules/follow/followModel');
 const Album = require('../modules/album/albumModel');
 const AlbumPhoto = require('../modules/album/albumPhotoModel');
+const Notification = require('../modules/notification/notificationModel');
+const Report = require('../modules/report/reportModel');
 
 // ─── User ⇄ Photo (Aula 07) ───────────────────────────────────────────────────
 // Um Usuário tem muitas Fotos (1:N)
@@ -72,6 +76,17 @@ AlbumPhoto.belongsTo(Album, { foreignKey: 'albumId', as: 'album' });
 Photo.hasMany(AlbumPhoto, { foreignKey: 'photoId', as: 'albumEntries', onDelete: 'CASCADE' });
 AlbumPhoto.belongsTo(Photo, { foreignKey: 'photoId', as: 'photo' });
 
+// ─── Notificações e denúncias (Aula 14) ──────────────────────────────────────
+// SÓ o sentido belongsTo: é ele que cria as chaves estrangeiras, e o ON DELETE
+// sai do allowNull de cada coluna — photoId opcional em notifications → SET NULL;
+// photoId obrigatório em reports (e userId/actorId) → NO ACTION (o banco recusa).
+Notification.belongsTo(User, { foreignKey: 'userId', as: 'Recipient' });
+Notification.belongsTo(User, { foreignKey: 'actorId', as: 'Actor' });
+Notification.belongsTo(Photo, { foreignKey: 'photoId', as: 'photo' });
+
+Report.belongsTo(User, { foreignKey: 'userId', as: 'Reporter' });
+Report.belongsTo(Photo, { foreignKey: 'photoId', as: 'photo' });
+
 module.exports = {
   User,
   Photo,
@@ -80,4 +95,6 @@ module.exports = {
   Follow,
   Album,
   AlbumPhoto,
+  Notification,
+  Report,
 };

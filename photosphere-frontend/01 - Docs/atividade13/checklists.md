@@ -33,7 +33,7 @@
 
 - [X] `albumModel.js` (`title`, `description`, `isPublic` padrão `false`, `photosCount`, `userId`, índice `idx_albums_user_id`) e `albumPhotoModel.js` (índice único `idx_unique_album_photo (album_id, photo_id)` e `idx_album_photos_photo_id`)
 - [X] Seis associações (`User`↔`Album`, `Album`↔`AlbumPhoto`, `Photo`↔`AlbumPhoto`), com `onDelete: 'CASCADE'` nos `hasMany`
-- [ ] Tabelas, índices e chaves estrangeiras (`ON DELETE CASCADE`, via `SHOW CREATE TABLE album_photos`) conferidos no banco
+- [X] Tabelas, índices e chaves estrangeiras (`ON DELETE CASCADE`, via `SHOW CREATE TABLE album_photos`) conferidos no banco
 
 **Etapa 3 — Validator, Service, Controller e Rotas**
 
@@ -49,21 +49,21 @@
 **Etapa 5 — A exclusão da foto limpa os álbuns**
 
 - [X] `deletePhoto` busca as linhas da junção, desconta 1 do `photosCount` de cada álbum e apaga as linhas, na mesma transação, antes do `destroy` da foto
-- [ ] Teste de controle feito e descrito (bloco comentado → contador alto; restaurado → contador certo)
+- [X] Teste de controle feito e descrito (bloco comentado → contador alto; restaurado → contador certo)
 
 **Etapa 6 — Testando (contas A e B)**
 
-- [ ] 1. Criar: `401`; `ab` `400`; só espaços `400`; `isPublic: "sim"` `400`; sem `isPublic` → privado e aparado; com `isPublic: true`
-- [ ] 2. Listar: só as da conta, a mais nova primeiro (desempate com duas criadas no mesmo segundo)
-- [ ] 3. Adicionar: `201`/1; repetir `200`/1; foto inexistente `404`; sem id ou `"abc"` `400`; de outra pessoa `403`; `99999` `404`; `abc` na URL `400`
-- [ ] 4. Remover: `200` e o contador desce; repetir `404`; de outra pessoa `403`
-- [ ] 5. Ler: público para visitante `200` (`isOwner: false`, autores, sem `password`); privado `403` para visitante e outra conta; privado da dona `200`; `99999` `404`; `abc` `400`
-- [ ] 6. Status: `401`; `hasPhoto` correto; foto inexistente `404`; a outra conta vê os dela
-- [ ] 7. Excluir o álbum: `403` / `200` / depois `404`; junção sem linhas dele; a foto continua existindo
-- [ ] 8. Excluir uma foto que está em álbuns de duas pessoas: os dois contadores voltam a 0
-- [ ] 9. Busca: vazio/1 letra → listas vazias; trecho do título (outra caixa) → a foto; trecho do username → a pessoa; inexistente → vazio; `?q=ab&q=cd` e `?q[x]=1` sem `500`; `%%` e `__` → vazio
-- [ ] 10. No banco, linha repetida na junção recusada (`Duplicate entry ... idx_unique_album_photo`)
-- [ ] 11. Regressão: feed, detalhe, perfil, curtir, comentar, seguir e listas, feed "Seguindo", upload, edição; `GET /users/abc/followers` → `400`
+- [X] 1. Criar: `401`; `ab` `400`; só espaços `400`; `isPublic: "sim"` `400`; sem `isPublic` → privado e aparado; com `isPublic: true`
+- [X] 2. Listar: só as da conta, a mais nova primeiro (desempate com duas criadas no mesmo segundo)
+- [X] 3. Adicionar: `201`/1; repetir `200`/1; foto inexistente `404`; sem id ou `"abc"` `400`; de outra pessoa `403`; `99999` `404`; `abc` na URL `400`
+- [X] 4. Remover: `200` e o contador desce; repetir `404`; de outra pessoa `403`
+- [X] 5. Ler: público para visitante `200` (`isOwner: false`, autores, sem `password`); privado `403` para visitante e outra conta; privado da dona `200`; `99999` `404`; `abc` `400`
+- [X] 6. Status: `401`; `hasPhoto` correto; foto inexistente `404`; a outra conta vê os dela
+- [X] 7. Excluir o álbum: `403` / `200` / depois `404`; junção sem linhas dele; a foto continua existindo
+- [X] 8. Excluir uma foto que está em álbuns de duas pessoas: os dois contadores voltam a 0
+- [X] 9. Busca: vazio/1 letra → listas vazias; trecho do título (outra caixa) → a foto; trecho do username → a pessoa; inexistente → vazio; `?q=ab&q=cd` e `?q[x]=1` sem `500`; `%%` e `__` → vazio
+- [X] 10. No banco, linha repetida na junção recusada (`Duplicate entry ... idx_unique_album_photo`)
+- [X] 11. Regressão: feed, detalhe, perfil, curtir, comentar, seguir e listas, feed "Seguindo", upload, edição; `GET /users/abc/followers` → `400`
 
 ---
 
@@ -94,29 +94,29 @@
 
 - [X] `utils/optimistic.js` com `runOptimistic({ apply, request, confirm })` — `apply` devolve o `undo`; sem `if` e sem toast
 - [X] `LikeButton` e `FollowButton` refatorados (template e cerca iguais; `nowFollowing` mantida)
-- [ ] Os dois botões testados sem regressão (otimista; Offline → volta + toast; visitante → login → volta)
+- [X] Os dois botões testados sem regressão (otimista; Offline → volta + toast; visitante → login → volta)
 
 **Etapa 3 — Meus Álbuns e o Detalhe do Álbum**
 
 - [X] `CreateAlbumModal.vue`: formulário no `BaseModal`, botão `type="submit"` com `form="create-album-form"`, `novalidate`, `validate()` com `LIMITS`, `isPublic` começando `false`, `isSubmitting` (`persistent`), erro dentro do modal, emite `created`
 - [X] `AlbumsView.vue` (Meus Álbuns): `useAsyncData` com `initialData: []`, `isCreating` e `albumToDelete`, álbum novo no topo, excluir pessimista (modal aberto se falhar), cartão com `stretched-link` e "Excluir" por cima (`position-relative` + `z-index`), selo Pública/Privada, estado vazio, pluralização
 - [X] `AlbumDetailView.vue`: `watch` no `:id`, `403`/`404` no lugar do conteúdo (sem toast) com botão para sair, "Remover do álbum" só para a dona e pessimista, toast de sucesso, estado vazio diferente para a dona
-- [ ] Modal de criação, lista e detalhe testados; cartão clicável com "Excluir" funcionando por cima
+- [X] Modal de criação, lista e detalhe testados; cartão clicável com "Excluir" funcionando por cima
 
 **Etapa 4 — O modal "Salvar" e o botão no Detalhe**
 
 - [X] `AddToAlbumModal.vue`: `useAsyncData` do status, caixas com `:checked` + `@change` (nunca `v-model`), cadeado nos privados, cerca por linha (`Set` reativo + `:disabled`), `toggle` com `runOptimistic`, cerca liberada no `.finally`, estado vazio com link para criar
 - [X] Botão "Salvar" no Detalhe da foto para todos (visitante → login com `redirect`), com a cerca do `useAuthenticatedAction` e o modal num `v-if`
 - [X] Extra: `BaseModal` com `watch(..., { immediate: true })` — modais montados já abertos também ligam o Esc e travam a rolagem
-- [ ] Modal testado (marcado conforme o servidor, otimista, rollback, uma requisição por clique duplo)
+- [X] Modal testado (marcado conforme o servidor, otimista, rollback, uma requisição por clique duplo)
 
 **Etapa 5 — Debounce, Tela de Busca e Navbar**
 
 - [X] `composables/useDebouncedValue.js` (`watch` + `setTimeout`/`clearTimeout`, valor inicial igual à origem, `onUnmounted` limpa o timer)
 - [X] `SearchView.vue`: `typedText` / `term` / `normalizedTerm`, estado inicial de `route.query.q` (com `typeof`), resposta vazia pronta com termo curto, `watch` lendo e escrevendo a URL (`router.replace`), seções "Pessoas" e "Fotos", "Nada encontrado para ...", dica do mínimo, foco no campo
 - [X] Navbar: `<form role="search">` com `@submit.prevent`, ignora vazio, `router.push({ name: 'search', query: { q } })` e limpa o campo, visível para visitantes; item "Meus Álbuns" no menu do avatar
-- [ ] Uma palavra inteira sem pausa → uma requisição (Network); F5 e link com o termo funcionam; Voltar não passa por cada pausa
+- [X] Uma palavra inteira sem pausa → uma requisição (Network); F5 e link com o termo funcionam; Voltar não passa por cada pausa
 
 **Etapa 6 — Teste Prático Completo**
 
-- [ ] Os seis passos testados em sequência, a partir do login, sem digitar nenhuma URL (exceto os links compartilhados e o id inexistente)
+- [X] Os seis passos testados em sequência, a partir do login, sem digitar nenhuma URL (exceto os links compartilhados e o id inexistente)
