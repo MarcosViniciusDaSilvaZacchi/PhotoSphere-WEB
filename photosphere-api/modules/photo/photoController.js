@@ -7,6 +7,7 @@
 
 const photoService = require('./photoService');
 const { parsePagination } = require('../../utils/pagination');
+const { parseId } = require('../../utils/parseId'); // Aula 13
 
 exports.createPhoto = async (req, res) => {
   const { title, description } = req.body;
@@ -35,7 +36,7 @@ exports.getFeed = async (req, res) => {
 
 exports.getPhoto = async (req, res) => {
   const currentUserId = req.user ? req.user.id : null;
-  const photo = await photoService.getPhotoDetails(req.params.id, currentUserId);
+  const photo = await photoService.getPhotoDetails(parseId(req.params.id, 'foto'), currentUserId);
 
   return res.success('Foto obtida com sucesso', photo);
 };
@@ -50,7 +51,7 @@ exports.getMyPhotos = async (req, res) => {
 
 // GET /api/photos/:id/edit
 exports.getPhotoForEdit = async (req, res) => {
-  const photo = await photoService.getPhotoForEdit(req.params.id, req.user.id);
+  const photo = await photoService.getPhotoForEdit(parseId(req.params.id, 'foto'), req.user.id);
   return res.success('Dados da foto para edição obtidos com sucesso', photo);
 };
 
@@ -58,7 +59,7 @@ exports.getPhotoForEdit = async (req, res) => {
 exports.updatePhoto = async (req, res) => {
   const { title, description } = req.body;
   const photo = await photoService.updatePhoto(
-    req.params.id,
+    parseId(req.params.id, 'foto'),
     req.user.id,
     { title, description },
     req.file // opcional: só existe se uma nova imagem foi enviada
@@ -68,6 +69,6 @@ exports.updatePhoto = async (req, res) => {
 
 // DELETE /api/photos/:id
 exports.deletePhoto = async (req, res) => {
-  const result = await photoService.deletePhoto(req.params.id, req.user.id);
+  const result = await photoService.deletePhoto(parseId(req.params.id, 'foto'), req.user.id);
   return res.success('Foto excluída com sucesso!', result);
 };

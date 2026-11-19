@@ -13,12 +13,14 @@
  * que o FollowButton também usa. O aviso de erro deixou de ser uma mensagem local:
  * quem avisa é o interceptor do Axios (toast). O catch daqui só desfaz o visual.
  *
- * O miolo otimista (passos 1–3) ainda não foi extraído: são só dois casos
- * (curtir e seguir) e eles diferem nos detalhes — a extração espera o terceiro caso.
+ * Aula 13: o miolo otimista (passos 1–3) foi extraído para utils/optimistic.js
+ * (runOptimistic) no terceiro caso — o modal "Salvar" dos álbuns. O template e a
+ * cerca não mudaram; só o handleClick ficou mais curto.
  */
 
 import { ref, watch } from 'vue'
 import { toggleLike } from '@/services/likeService'
+import { runOptimistic } from '@/utils/optimistic'
 import { useAuthenticatedAction } from '@/composables/useAuthenticatedAction'
 import { formatCount } from '@/utils/format'
 
@@ -47,26 +49,27 @@ watch(
 )
 
 function handleClick() {
-  run(async () => {
-    // 1. Guarda o estado anterior
-    const previous = { liked: isLiked.value, count: likesCount.value }
-
-    // 2. Aplica a mudança imediatamente (otimista)
-    isLiked.value = !previous.liked
-    likesCount.value = Math.max(0, previous.count + (isLiked.value ? 1 : -1))
-
-    try {
-      // 3a. Confirma com os números reais do servidor
-      const response = await toggleLike(props.photoId)
-      isLiked.value = response.data.liked
-      likesCount.value = response.data.likesCount
-      emit('change', { liked: isLiked.value, likesCount: likesCount.value })
-    } catch {
-      // 3b. Rollback: volta exatamente ao estado anterior (o toast de erro é do interceptor)
-      isLiked.value = previous.liked
-      likesCount.value = previous.count
-    }
-  })
+  run(() =>
+    runOptimistic({
+      // 1 + 2. guarda o estado anterior, aplica na hora e devolve como desfazer
+      apply: () => {
+        const previous = { liked: isLiked.value, count: likesCount.value }
+        isLiked.value = !previous.liked
+        likesCount.value = Math.max(0, previous.count + (isLiked.value ? 1 : -1))
+        return () => {
+          isLiked.value = previous.liked
+          likesCount.value = previous.count
+        }
+      },
+      request: () => toggleLike(props.photoId),
+      // 3. confirma com os números do servidor (no erro, o runOptimistic chama o undo)
+      confirm: (data) => {
+        isLiked.value = data.liked
+        likesCount.value = data.likesCount
+        emit('change', { liked: isLiked.value, likesCount: likesCount.value })
+      },
+    })
+  )
 }
 </script>
 

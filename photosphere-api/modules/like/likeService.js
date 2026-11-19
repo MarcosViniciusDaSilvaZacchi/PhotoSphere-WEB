@@ -12,14 +12,10 @@ const sequelize = require('../../config/database');
 const Like = require('./likeModel');
 const Photo = require('../photo/photoModel');
 const User = require('../user/userModel');
+const { httpError } = require('../../utils/httpError'); // Aula 13: utilitário compartilhado
 
 const AUTHOR_ATTRIBUTES = ['id', 'username', 'fullName', 'profilePicture'];
 
-function httpError(message, status) {
-  const error = new Error(message);
-  error.status = status;
-  return error;
-}
 
 /**
  * POST /api/photos/:photoId/toggle-like

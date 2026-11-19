@@ -17,10 +17,15 @@
  *
  * Aula 12: a cerca (visitante → login; um clique por vez) é o useAuthenticatedAction,
  * e o erro é avisado pelo interceptor (toast) — o catch só desfaz o visual.
+ *
+ * Aula 13: o miolo otimista é o runOptimistic (utils/optimistic.js). A variável
+ * local nowFollowing continua: dentro do apply, reler following.value logo após
+ * atribuir ainda devolveria o valor antigo.
  */
 
 import { useAuthenticatedAction } from '@/composables/useAuthenticatedAction'
 import { toggleFollow } from '@/services/followService'
+import { runOptimistic } from '@/utils/optimistic'
 
 const props = defineProps({
   userId: { type: [Number, String], required: true },
@@ -32,26 +37,26 @@ const followersCount = defineModel('followersCount', { type: Number, default: 0 
 const { isBusy, run } = useAuthenticatedAction()
 
 function handleClick() {
-  run(async () => {
-    // 1. Guarda o estado anterior
-    const previous = { following: following.value, count: followersCount.value }
-
-    // 2. Aplica na hora — o novo estado fica numa variável LOCAL (nunca reler following.value aqui)
-    const nowFollowing = !previous.following
-    following.value = nowFollowing
-    followersCount.value = Math.max(0, previous.count + (nowFollowing ? 1 : -1))
-
-    try {
-      // 3a. Confirma com os números reais do servidor
-      const response = await toggleFollow(props.userId)
-      following.value = response.data.isFollowing
-      followersCount.value = response.data.followersCount
-    } catch {
-      // 3b. Rollback: volta exatamente ao estado guardado (o toast de erro é do interceptor)
-      following.value = previous.following
-      followersCount.value = previous.count
-    }
-  })
+  run(() =>
+    runOptimistic({
+      apply: () => {
+        const previous = { following: following.value, count: followersCount.value }
+        // o novo estado fica numa variável LOCAL (nunca reler following.value aqui)
+        const nowFollowing = !previous.following
+        following.value = nowFollowing
+        followersCount.value = Math.max(0, previous.count + (nowFollowing ? 1 : -1))
+        return () => {
+          following.value = previous.following
+          followersCount.value = previous.count
+        }
+      },
+      request: () => toggleFollow(props.userId),
+      confirm: (data) => {
+        following.value = data.isFollowing
+        followersCount.value = data.followersCount
+      },
+    })
+  )
 }
 </script>
 

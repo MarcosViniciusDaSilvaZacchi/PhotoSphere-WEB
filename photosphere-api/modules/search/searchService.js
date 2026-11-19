@@ -1,16 +1,60 @@
 /**
  * searchService.js — Camada de acesso a dados do módulo de busca.
  *
- * Hoje (Aula 02) ainda não existe conexão com banco de dados — por isso
- * esta função devolve sempre listas vazias. A partir da trilha da Aula 13,
- * este é o único arquivo que vai mudar para consultar o banco de verdade
- * por itens e usuários que combinem com o termo buscado.
+ * Aula 02: devolvia listas vazias fixas (ainda não havia banco).
+ * Aula 13: busca de verdade — como prometido, este foi o ÚNICO arquivo da busca
+ * que precisou mudar de verdade; rota e front continuaram com o mesmo contrato
+ * ({ query, fotos, users } — o nome "fotos" vem da ficha da Aula 02).
  *
- * Entidade principal do PhotoSphere: fotos
+ * Entidade principal do PhotoSphere: fotos (busca no título).
  */
 
-function globalSearch(query) {
-  return { fotos: [], users: [] };
+const { Op } = require('sequelize');
+const Photo = require('../photo/photoModel');
+const User = require('../user/userModel');
+const { SEARCH } = require('../../config/constants');
+
+const PUBLIC_USER_ATTRIBUTES = ['id', 'username', 'fullName', 'profilePicture'];
+
+/**
+ * No LIKE, % (qualquer sequência) e _ (qualquer caractere) são CURINGAS.
+ * Sem o escape, buscar "%%" virava LIKE '%%%%' — que casa com tudo — e "__"
+ * casava com qualquer título de 2+ letras. O \ antes de cada curinga (e do
+ * próprio \) faz o MySQL tratá-los como texto comum.
+ */
+function escapeLike(text) {
+  return text.replace(/[\\%_]/g, '\\$&');
 }
 
-module.exports = { globalSearch };
+async function searchPhotos(query) {
+  return Photo.findAll({
+    where: { title: { [Op.like]: `%${escapeLike(query)}%` } },
+    include: [{ model: User, as: 'author', attributes: PUBLIC_USER_ATTRIBUTES }],
+    order: [['createdAt', 'DESC'], ['id', 'DESC']],
+    limit: SEARCH.LIMIT,
+  });
+}
+
+async function searchUsers(query) {
+  const pattern = `%${escapeLike(query)}%`;
+  return User.findAll({
+    where: {
+      [Op.or]: [{ username: { [Op.like]: pattern } }, { fullName: { [Op.like]: pattern } }],
+    },
+    attributes: PUBLIC_USER_ATTRIBUTES,
+    order: [['username', 'ASC']],
+    limit: SEARCH.LIMIT,
+  });
+}
+
+/**
+ * As duas consultas não dependem uma da outra → rodam em PARALELO (Promise.all).
+ * Chamadas pelo nome (searchPhotos/searchUsers), sem "this": quem importa
+ * globalSearch solto perderia o this e quebraria.
+ */
+async function globalSearch(query) {
+  const [fotos, users] = await Promise.all([searchPhotos(query), searchUsers(query)]);
+  return { fotos, users };
+}
+
+module.exports = { globalSearch, searchPhotos, searchUsers, escapeLike };

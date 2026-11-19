@@ -6,6 +6,7 @@
  * Aula 09: CRUD do dono — listar as minhas, buscar para edição, editar e excluir
  * Aula 10: isLiked no detalhe e exclusão em transação (curtidas + comentários)
  * Aula 11: feed filtrado pelas pessoas que o usuário segue
+ * Aula 13: a exclusão também tira a foto dos álbuns e desconta o contador de cada um
  */
 
 const { Op } = require('sequelize');
@@ -15,22 +16,17 @@ const User = require('../user/userModel');
 const Like = require('../like/likeModel');
 const Comment = require('../comment/commentModel');
 const Follow = require('../follow/followModel');
+const Album = require('../album/albumModel');
+const AlbumPhoto = require('../album/albumPhotoModel');
 const { removeUpload } = require('../../utils/fileStorage');
 const { isDatabaseOffline } = require('../../utils/dbFallback');
 const { PAGINATION } = require('../../config/constants');
+const { httpError } = require('../../utils/httpError'); // Aula 13: utilitário compartilhado
 
 // Atributos públicos do autor — NUNCA inclui senha, e-mail ou flags internas
 const AUTHOR_ATTRIBUTES = ['id', 'username', 'fullName', 'profilePicture'];
 const authorInclude = { model: User, as: 'author', attributes: AUTHOR_ATTRIBUTES };
 
-/**
- * Cria um erro HTTP com status, para ser tratado pelo errorHandler.
- */
-function httpError(message, status) {
-  const error = new Error(message);
-  error.status = status;
-  return error;
-}
 
 /**
  * Busca uma foto e verifica se ela pertence ao usuário.
@@ -348,6 +344,20 @@ async function deletePhoto(id, userId) {
 
     await Like.destroy({ where: { photoId: photo.id }, transaction: t });
     await Comment.destroy({ where: { photoId: photo.id }, transaction: t });
+
+    // Aula 13: álbuns que contêm esta foto. O ON DELETE CASCADE apagaria as linhas
+    // da junção sozinho, mas NÃO o photosCount de cada álbum (um dado derivado,
+    // guardado) — sem este bloco, o álbum diria "3 fotos" mostrando só 2.
+    const albumEntries = await AlbumPhoto.findAll({
+      where: { photoId: photo.id },
+      attributes: ['albumId'],
+      transaction: t,
+    });
+    for (const entry of albumEntries) {
+      await Album.decrement('photosCount', { by: 1, where: { id: entry.albumId }, transaction: t });
+    }
+    await AlbumPhoto.destroy({ where: { photoId: photo.id }, transaction: t });
+
     await photo.destroy({ transaction: t });
     await User.decrement('photosCount', {
       by: 1,

@@ -13,6 +13,17 @@ module.exports = {
     TITLE_MAX: 100,
     DESCRIPTION_MAX: 500,
     COMMENT_MAX: 500, // Aula 10: limite do texto de um comentário
+    // Aula 13: álbum (a "coleção" do PhotoSphere)
+    ALBUM_TITLE_MIN: 3,
+    ALBUM_TITLE_MAX: 100,
+    ALBUM_DESCRIPTION_MAX: 500,
+  },
+
+  // Aula 13: busca de verdade (GET /api/search)
+  SEARCH: {
+    MIN_LENGTH: 2,   // menos que isso não consulta o banco
+    MAX_LENGTH: 100, // o termo é cortado aqui
+    LIMIT: 10,       // máximo de fotos e de pessoas por resposta
   },
 
   // Aula 12: paginação dos feeds — o "tamanho de página" deixa de ficar solto nos services

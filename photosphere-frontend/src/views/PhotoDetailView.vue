@@ -14,14 +14,19 @@
  *  - CommentSection lista e publica comentários; o contador acompanha.
  *
  * Aula 12: dados carregados pelo useAsyncData (com watch no :id da rota).
+ *
+ * Aula 13: botão "Salvar" (para todos — o visitante vai ao login e volta), com a
+ * cerca do useAuthenticatedAction e um interruptor v-if para o AddToAlbumModal.
  */
 
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { getPhotoById } from '@/services/photoService'
 import { getPhotoUrl, getProfilePictureUrl } from '@/utils/media'
 import { pluralize } from '@/utils/format'
 import { useAsyncData } from '@/composables/useAsyncData'
+import { useAuthenticatedAction } from '@/composables/useAuthenticatedAction'
+import AddToAlbumModal from '@/components/AddToAlbumModal.vue'
 import LikeButton from '@/components/LikeButton.vue'
 import CommentSection from '@/components/CommentSection.vue'
 
@@ -41,6 +46,15 @@ const errorText = computed(() => {
     ? 'Foto não encontrada. O item pode ter sido removido.'
     : error.value.message || 'Erro ao carregar detalhes da foto.'
 })
+
+// Aula 13: "Salvar" — visitante vai ao login (com ?redirect= para voltar a esta foto)
+const isSaveOpen = ref(false)
+const { run: runAuthenticated } = useAuthenticatedAction()
+function openSave() {
+  runAuthenticated(() => {
+    isSaveOpen.value = true
+  })
+}
 
 // Mantém os números do painel coerentes com o que os componentes filhos fizeram
 function onLikeChange({ liked, likesCount }) {
@@ -123,7 +137,13 @@ function goBack() {
           <a href="#comments-title" class="ps-btn ps-btn--ghost">
             <i class="bi bi-chat"></i> {{ photo.commentsCount || 0 }}
           </a>
+          <button type="button" class="ps-btn ps-btn--ghost" @click="openSave">
+            <i class="bi bi-bookmark-plus"></i> Salvar
+          </button>
         </div>
+
+        <!-- Aula 13: o modal só existe (e só busca os álbuns) enquanto está aberto -->
+        <AddToAlbumModal v-if="isSaveOpen" v-model:open="isSaveOpen" :photo-id="photo.id" />
 
         <div class="info-panel__stats">
           <span class="ps-chip"><i class="bi bi-eye"></i> {{ pluralize(photo.viewsCount, 'visualização', 'visualizações') }}</span>

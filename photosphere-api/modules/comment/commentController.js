@@ -5,12 +5,13 @@
  */
 
 const commentService = require('./commentService');
+const { parseId } = require('../../utils/parseId'); // Aula 13
 
 // POST /api/photos/:photoId/comments
 exports.createComment = async (req, res) => {
   const comment = await commentService.createComment(
     req.user.id,
-    req.params.photoId,
+    parseId(req.params.photoId, 'foto'),
     req.body.content
   );
   return res.success('Comentário publicado!', comment, 201);
@@ -18,6 +19,6 @@ exports.createComment = async (req, res) => {
 
 // GET /api/photos/:photoId/comments
 exports.listComments = async (req, res) => {
-  const comments = await commentService.listComments(req.params.photoId);
+  const comments = await commentService.listComments(parseId(req.params.photoId, 'foto'));
   return res.success('Comentários obtidos com sucesso', comments);
 };

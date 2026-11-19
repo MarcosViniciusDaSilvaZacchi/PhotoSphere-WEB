@@ -1,5 +1,5 @@
 /**
- * src/assets/interactions.css — Curtidas e comentários (Aula 10) e seguir (Aula 11).
+ * src/assets/interactions.css — Curtidas e comentários (Aula 10), seguir (Aula 11) e álbuns/busca (Aula 13).
  */
 
 /* ─── Botão de curtir ─────────────────────────────────────────────────────── */
@@ -161,3 +161,18 @@
 .person-row__username { color: var(--brand-color-light); font-size: 0.85rem; font-weight: 600; }
 .person-row__bio { margin: 0.15rem 0 0; color: var(--ps-muted); font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .person-row__chevron { color: var(--ps-muted); }
+
+/* ═══ Aula 13: álbuns e busca ══════════════════════════════════════════════ */
+
+/* Selo Pública / Privada */
+.album-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.album-badge--public { color: #6ee7a8; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.35); }
+.album-badge--private { color: var(--ps-muted); background: var(--ps-surface-2); border: 1px solid var(--ps-border-strong); }

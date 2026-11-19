@@ -11,6 +11,7 @@
  *
  * Aula 10: atalho de UM clique para as Fotos Curtidas (coração), além do item no menu.
  * Aula 11: item "Seguindo" na navegação principal → /following (feed de quem eu sigo).
+ * Aula 13: barra de busca (Enter → /search?q=), item "Explorar" e "Meus Álbuns" no menu.
  */
 
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
@@ -24,6 +25,16 @@ const route = useRoute()
 const { isAuthenticated, user, logout } = useAuth()
 
 // ─── Menu do avatar ──────────────────────────────────────────────────────────
+// ─── Busca (Aula 13) ─────────────────────────────────────────────────────────
+const searchText = ref('')
+
+function submitSearch() {
+  const q = searchText.value.trim()
+  if (!q) return // campo vazio: não navega
+  router.push({ name: 'search', query: { q } })
+  searchText.value = ''
+}
+
 const isMenuOpen = ref(false)
 const menuRef = ref(null)
 
@@ -69,6 +80,10 @@ async function handleLogout() {
         <RouterLink to="/" class="nav-link-ps" exact-active-class="is-active">
           <i class="bi bi-house"></i><span>Início</span>
         </RouterLink>
+        <!-- Aula 13: "Explorar" abre a busca (o campo já vem com o foco) -->
+        <RouterLink :to="{ name: 'search' }" class="nav-link-ps" active-class="is-active">
+          <i class="bi bi-compass"></i><span>Explorar</span>
+        </RouterLink>
         <RouterLink v-if="isAuthenticated" to="/feed" class="nav-link-ps" active-class="is-active">
           <i class="bi bi-grid-3x3-gap"></i><span>Feed</span>
         </RouterLink>
@@ -77,6 +92,12 @@ async function handleLogout() {
           <i class="bi bi-people"></i><span>Seguindo</span>
         </RouterLink>
       </nav>
+
+      <!-- Aula 13: barra de busca, visível também para visitantes -->
+      <form class="nav-search" role="search" @submit.prevent="submitSearch">
+        <input v-model="searchText" type="search" class="nav-search__input" placeholder="Buscar fotos ou pessoas" aria-label="Buscar fotos ou pessoas" />
+        <button type="submit" class="nav-search__btn" aria-label="Buscar"><i class="bi bi-search"></i></button>
+      </form>
 
       <div class="nav-actions">
         <template v-if="isAuthenticated">
@@ -131,6 +152,9 @@ async function handleLogout() {
                 </RouterLink>
                 <RouterLink to="/liked" class="dropdown-ps__item" role="menuitem" @click="closeMenu">
                   <i class="bi bi-heart"></i> Fotos Curtidas
+                </RouterLink>
+                <RouterLink :to="{ name: 'albums' }" class="dropdown-ps__item" role="menuitem" @click="closeMenu">
+                  <i class="bi bi-collection"></i> Meus Álbuns
                 </RouterLink>
 
                 <div class="dropdown-ps__divider"></div>
@@ -209,6 +233,30 @@ async function handleLogout() {
 .nav-link-ps.is-active i { color: var(--brand-color); }
 
 .nav-actions { display: flex; align-items: center; gap: 0.75rem; }
+
+/* ─── Busca (Aula 13) ───────────────────────────────────────────────────── */
+.nav-search {
+  display: flex;
+  align-items: center;
+  width: min(260px, 26vw);
+  border: 1px solid var(--ps-border-strong);
+  border-radius: 999px;
+  background: var(--ps-surface);
+  transition: border-color 0.2s;
+}
+.nav-search:focus-within { border-color: var(--brand-color); }
+.nav-search__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0 0.45rem 0.9rem;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ps-text);
+  font-size: 0.85rem;
+}
+.nav-search__btn { border: 0; background: transparent; color: var(--ps-muted); padding: 0.4rem 0.75rem; }
+.nav-search__btn:hover { color: var(--brand-color); }
 
 /* ─── Atalho das curtidas (Aula 10) ─────────────────────────────────────── */
 .icon-link {
@@ -300,6 +348,7 @@ async function handleLogout() {
 
 @media (max-width: 720px) {
   .nav-link-ps span, .avatar-trigger__name, .nav-upload span { display: none; }
+  .nav-search { display: none; } /* no celular, a busca fica no item "Explorar" */
   .navbar-ps__inner { gap: 0.5rem; }
 }
 </style>

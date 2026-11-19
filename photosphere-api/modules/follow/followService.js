@@ -14,15 +14,11 @@
 const sequelize = require('../../config/database');
 const Follow = require('./followModel');
 const User = require('../user/userModel');
+const { httpError } = require('../../utils/httpError'); // Aula 13: utilitário compartilhado
 
 // Atributos públicos de uma pessoa nas listas — nunca senha, e-mail ou flags internas
 const PUBLIC_USER_ATTRIBUTES = ['id', 'username', 'fullName', 'profilePicture', 'bio'];
 
-function httpError(message, status) {
-  const error = new Error(message);
-  error.status = status;
-  return error;
-}
 
 async function ensureUserExists(userId, options = {}) {
   const user = await User.findByPk(userId, { attributes: ['id'], ...options });

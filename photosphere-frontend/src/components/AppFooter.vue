@@ -2,7 +2,7 @@
   <footer class="footer">
     <p>© 2026 PhotoSphere — Todos os direitos reservados</p>
     <nav class="footer__links">
-      <RouterLink to="/explore">Explorar</RouterLink>
+      <RouterLink to="/search">Explorar</RouterLink>
       <RouterLink to="/login">Entrar</RouterLink>
       <RouterLink to="/register">Cadastrar</RouterLink>
     </nav>

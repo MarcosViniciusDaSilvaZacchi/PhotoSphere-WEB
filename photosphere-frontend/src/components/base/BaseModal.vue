@@ -45,7 +45,7 @@ watch(open, (isOpen) => {
     document.removeEventListener('keydown', onKeydown)
     document.body.style.overflow = ''
   }
-})
+}, { immediate: true }) // Aula 13: modais montados já abertos (v-if) também ligam o Esc
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)

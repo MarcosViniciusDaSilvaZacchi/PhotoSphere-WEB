@@ -4,7 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView          from '@/views/HomeView.vue'
 import LoginView         from '@/views/LoginView.vue'
 import RegisterView      from '@/views/RegisterView.vue'
-import ExploreView       from '@/views/ExploreView.vue'
+import SearchView        from '@/views/SearchView.vue'        // Aula 13 (substitui o placeholder ExploreView)
 
 // ── Rotas de Usuário Autenticado ────────────────────────────────────────────
 import FeedView          from '@/views/FeedView.vue'
@@ -52,9 +52,15 @@ const router = createRouter({
       component: RegisterView,
     },
     {
+      // Aula 13: busca de fotos e pessoas — pública, termo na URL (?q=)
+      path: '/search',
+      name: 'search',
+      component: SearchView,
+    },
+    {
+      // links antigos de "Explorar" continuam funcionando
       path: '/explore',
-      name: 'explore',
-      component: ExploreView,
+      redirect: { name: 'search' },
     },
 
     // ── Usuário autenticado (exigem login) ───────────────────────────────
@@ -78,16 +84,17 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/albums',
+      path: '/albums',           // Aula 13: Meus Álbuns (a "Minhas Coleções" do roteiro)
       name: 'albums',
       component: AlbumsView,
       meta: { requiresAuth: true },
     },
     {
+      // Aula 13: detalhe PÚBLICO — o visitante vê álbuns públicos; a API responde 403
+      // para os privados de outra pessoa (a tela mostra "privado")
       path: '/albums/:id',       // :id = parâmetro dinâmico (ex: /albums/42)
       name: 'album-detail',
       component: AlbumDetailView,
-      meta: { requiresAuth: true },
     },
     {
       // Aula 09: detalhe público — a API usa optionalAuth (visitante também vê)

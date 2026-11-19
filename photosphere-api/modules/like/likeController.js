@@ -6,10 +6,11 @@
  */
 
 const likeService = require('./likeService');
+const { parseId } = require('../../utils/parseId'); // Aula 13
 
 // POST /api/photos/:photoId/toggle-like
 exports.toggleLike = async (req, res) => {
-  const result = await likeService.toggleLike(req.user.id, req.params.photoId);
+  const result = await likeService.toggleLike(req.user.id, parseId(req.params.photoId, 'foto'));
 
   // 201 quando criou uma curtida; 200 quando removeu
   return result.liked
@@ -20,7 +21,7 @@ exports.toggleLike = async (req, res) => {
 // GET /api/photos/:photoId/like-status
 exports.getLikeStatus = async (req, res) => {
   const userId = req.user ? req.user.id : null;
-  const status = await likeService.getLikeStatus(userId, req.params.photoId);
+  const status = await likeService.getLikeStatus(userId, parseId(req.params.photoId, 'foto'));
   return res.success('Status da curtida obtido com sucesso', status);
 };
 

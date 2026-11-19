@@ -1,17 +1,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getApiStatus } from '@/services/systemService'
-import { search } from '@/services/searchService'
 
-import { useAuthStore } from '@/stores/auth'
-import api from '@/services/api'
 
 // ref() cria uma variável reativa — quando muda, o Vue atualiza a tela automaticamente
 const apiStatus = ref(null)   // null = ainda não buscou
 const loading   = ref(true)   // true = carregando
 const error     = ref(null)   // null = sem erro
 
-const authStore = useAuthStore()
 
 // onMounted() executa assim que o componente aparece na tela
 onMounted(async () => {
@@ -60,7 +56,7 @@ onMounted(async () => {
 
       <div class="hero__actions">
         <RouterLink to="/register" class="btn btn--primary">Criar conta</RouterLink>
-        <RouterLink to="/explore"  class="btn btn--secondary">Explorar fotos</RouterLink>
+        <RouterLink :to="{ name: 'search' }" class="btn btn--secondary">Explorar fotos</RouterLink>
       </div>
       </div>
     </section>

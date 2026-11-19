@@ -21,6 +21,16 @@ export const LIMITS = {
   TITLE_MAX: 100,
   DESCRIPTION_MAX: 500,
   COMMENT_MAX: 500,
+  // Aula 13: álbuns (iguais a VALIDATION.ALBUM_* da API)
+  ALBUM_TITLE_MIN: 3,
+  ALBUM_TITLE_MAX: 100,
+  ALBUM_DESCRIPTION_MAX: 500,
+}
+
+// Aula 13: busca — mínimo de letras (igual ao SEARCH.MIN_LENGTH da API) e o tempo de pausa do debounce
+export const SEARCH = {
+  MIN_LENGTH: 2,
+  DEBOUNCE_MS: 400,
 }
 
 // Itens por página nos feeds (a API aceita até PAGINATION.MAX_LIMIT = 50)
