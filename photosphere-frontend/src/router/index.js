@@ -22,11 +22,13 @@ import FollowingFeedView from '@/views/FollowingFeedView.vue'            // Aula
 import NotificationsView from '@/views/NotificationsView.vue'            // Aula 14
 import SettingsView      from '@/views/SettingsView.vue'
 
-// ── Rotas de Administrador ──────────────────────────────────────────────────
+// ── Rotas de Administrador (Aula 15: rotas filhas dentro do AdminLayout) ─────
+import AdminLayout          from '@/components/layout/AdminLayout.vue'
 import AdminDashboardView   from '@/views/admin/AdminDashboardView.vue'
 import AdminCategoriesView  from '@/views/admin/AdminCategoriesView.vue'
 import AdminUsersView       from '@/views/admin/AdminUsersView.vue'
 import AdminModerationView  from '@/views/admin/AdminModerationView.vue'
+import AdminPhotosView      from '@/views/admin/AdminPhotosView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -160,50 +162,53 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
 
-    // ── Administrador (exigem login e perfil admin) ────────────────────────
+    // ── Administrador (Aula 15) ────────────────────────────────────────────
+    // Uma rota PAI com o layout do painel; a meta fica no pai e vale para todas as
+    // filhas (o Vue Router junta a meta de todas as rotas que casaram em to.meta).
+    // /admin sozinho redireciona para o Dashboard. Paths das filhas são relativos (sem /).
     {
       path: '/admin',
       name: 'admin',
-      component: AdminDashboardView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/admin/categories',
-      name: 'admin-categories',
-      component: AdminCategoriesView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/admin/users',
-      name: 'admin-users',
-      component: AdminUsersView,
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/admin/moderation',
-      name: 'admin-moderation',
-      component: AdminModerationView,
-      meta: { requiresAuth: true },
+      component: AdminLayout,
+      redirect: { name: 'admin-dashboard' },
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        { path: 'dashboard', name: 'admin-dashboard', component: AdminDashboardView },
+        { path: 'moderation', name: 'admin-moderation', component: AdminModerationView }, // Denúncias
+        { path: 'users', name: 'admin-users', component: AdminUsersView },
+        { path: 'photos', name: 'admin-photos', component: AdminPhotosView },
+        // Categorias (regra de negócio do PhotoSphere) ainda não fazem parte do roteiro:
+        // a tela segue como placeholder, fora das abas, até a aula que tratar delas.
+        { path: 'categories', name: 'admin-categories', component: AdminCategoriesView },
+      ],
     },
   ],
 })
 
 // ── Guarda de Navegação Global (Navigation Guard) ───────────────────────────
 // Atualizado na Aula 06 para utilizar o composable useAuth()
+// Aula 15: guarda por PAPEL (requiresAdmin), depois da checagem de login.
 import { useAuth } from '@/composables/useAuth'
+import { useToast } from '@/composables/useToast'
 
-router.beforeEach((to, from, next) => {
-  const { isAuthenticated } = useAuth()
+router.beforeEach((to) => {
+  const { isAuthenticated, isAdmin } = useAuth()
 
   if (to.meta.requiresAuth && !isAuthenticated.value) {
     // Usuário deslogado tentando acessar rota protegida: redireciona ao Login
-    next({
-      name: 'login',
-      query: { redirect: to.fullPath },
-    })
-  } else {
-    next()
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
+
+  if (to.meta.requiresAdmin && !isAdmin.value) {
+    // ⚠️ Esta guarda é só USABILIDADE: ela lê o isAdmin guardado no navegador
+    // (localStorage), que qualquer pessoa pode editar. Quem protege os DADOS é a API
+    // (isAuthenticated + isAdmin em /api/admin): com o isAdmin "falsificado", o painel
+    // abre, mas todas as chamadas voltam 403.
+    useToast().error('Você não tem permissão para acessar a administração.')
+    return { name: 'feed' }
+  }
+
+  return true
 })
 
 export default router

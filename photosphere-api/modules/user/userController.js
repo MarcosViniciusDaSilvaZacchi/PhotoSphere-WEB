@@ -10,35 +10,12 @@ exports.register = async (req, res) => {
   return res.success('Conta criada com sucesso! Faça login para continuar.', newUser, 201);
 };
 
+// Aula 15: sem o login "ADM/123456" que funcionava com o banco fora do ar (pendência do
+// checkpoint-02.md) — virar administrador agora só pelo scripts/setAdmin.js, no servidor.
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-
-  try {
-    const data = await userService.loginUser(email, password);
-    return res.success('Login realizado com sucesso!', data);
-  } catch (err) {
-    // Se o banco MySQL não estiver acessível, permitir apenas o login ADM hardcoded
-    if (err.name?.includes('Sequelize') || err.code === 'ECONNREFUSED' || err.parent?.code === 'ECONNREFUSED') {
-      if (email === 'ADM' && password === '123456') {
-        const { generateToken } = require('../../config/jwt');
-        const token = generateToken({ id: 1, username: 'ADM', isAdmin: true });
-        return res.success('Login realizado com sucesso!', {
-          token,
-          user: {
-            id: 1,
-            username: 'ADM',
-            email: 'adm@photosphere.com',
-            fullName: 'Administrador',
-            profilePicture: 'default-profile.png',
-            isAdmin: true,
-          },
-        });
-      }
-      // Credenciais inválidas mesmo em modo dev
-      return res.error('Credenciais inválidas. Verifique seu usuário/e-mail e senha.', null, 401);
-    }
-    throw err;
-  }
+  const data = await userService.loginUser(email, password);
+  return res.success('Login realizado com sucesso!', data);
 };
 
 exports.logout = async (req, res) => {

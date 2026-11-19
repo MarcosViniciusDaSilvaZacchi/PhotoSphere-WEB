@@ -51,8 +51,11 @@ async function loginUser(emailOrUsername, password) {
     throw new Error('Credenciais inválidas. Verifique seu usuário/e-mail e senha.');
   }
 
+  // Aula 15: o bloqueio só é checado DEPOIS da senha — antes, qualquer um descobriria
+  // quais contas existem e estão bloqueadas só tentando o e-mail. 403 (e não 401):
+  // a pessoa provou quem é (senha certa), mas não pode entrar.
   if (user.isBlocked) {
-    const error = new Error('Esta conta foi bloqueada.');
+    const error = new Error('Sua conta foi bloqueada. Entre em contato com a administração.');
     error.status = 403;
     throw error;
   }

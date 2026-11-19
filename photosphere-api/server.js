@@ -18,6 +18,7 @@ const followRoutes = require('./modules/follow/followRoutes');    // E11: seguir
 const albumRoutes = require('./modules/album/albumRoutes');       // E13: álbuns (coleções)
 const notificationRoutes = require('./modules/notification/notificationRoutes'); // E14: notificações
 const reportRoutes = require('./modules/report/reportRoutes');    // E14: denúncias
+const adminRoutes = require('./modules/admin/adminRoutes');       // E15: painel de administração
 const errorHandler = require('./middlewares/errorHandler');   // E3: tratamento global de erros
 const sequelize = require('./config/database');               // E3: conexão MySQL
 require('./config/associations');                             // E7: relacionamentos carregados antes do sync
@@ -79,6 +80,9 @@ app.use('/api', albumRoutes);
 // Módulos de notificações e denúncias (E14)
 app.use('/api', notificationRoutes);
 app.use('/api', reportRoutes);
+
+// Painel de administração (E15): uma guarda só (isAuthenticated + isAdmin) para tudo em /api/admin
+app.use('/api', adminRoutes);
 
 // Rota 404 — qualquer endereço não mapeado cai aqui
 app.use((req, res) => {

@@ -39,6 +39,16 @@ module.exports = {
   // (a Aula 15 lê as denúncias com esta mesma lista)
   REPORT: {
     REASONS: ['inappropriate_content', 'harassment', 'spam', 'copyright', 'other'],
+    // Aula 15: situação da denúncia (o painel marca como revisada)
+    STATUS: {
+      PENDING: 'pending',
+      REVIEWED: 'reviewed',
+    },
+  },
+
+  // Aula 15: painel de administração
+  ADMIN: {
+    REPORT_FILTERS: ['pending', 'reviewed', 'all'],
   },
 
   // Aula 12: paginação dos feeds — o "tamanho de página" deixa de ficar solto nos services

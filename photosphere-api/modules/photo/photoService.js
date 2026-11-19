@@ -38,14 +38,15 @@ const authorInclude = { model: User, as: 'author', attributes: AUTHOR_ATTRIBUTES
  * Se invertêssemos, um id inexistente cairia no 403 e a API mentiria
  * dizendo que o item existe, mas é de outra pessoa.
  */
-async function findOwnedPhotoOrFail(id, userId, options = {}) {
+async function findOwnedPhotoOrFail(id, userId, options = {}, isAdmin = false) {
   const photo = await Photo.findByPk(id, options);
 
   if (!photo) {
     throw httpError('Foto não encontrada.', 404);
   }
 
-  if (Number(photo.userId) !== Number(userId)) {
+  // Aula 15: o administrador (pelo painel) pode excluir a foto de qualquer pessoa
+  if (!isAdmin && Number(photo.userId) !== Number(userId)) {
     throw httpError('Você não tem permissão para alterar esta foto.', 403);
   }
 
@@ -340,10 +341,14 @@ async function updatePhoto(id, userId, { title, description }, file) {
  * uma falhar, nada é apagado (não sobra foto sem curtidas, nem curtidas sem foto).
  * O arquivo só é removido DEPOIS do commit: se a transação desfizesse tudo
  * e o arquivo já tivesse sido apagado, a foto voltaria sem imagem.
+ *
+ * Aula 15: isAdmin = true vem SÓ do painel (DELETE /api/admin/photos/:id). A rota
+ * comum sempre passa false — um administrador nela recebe 403 como qualquer um.
+ * O photosCount descontado é o do DONO da foto (photo.userId), não o de quem exclui.
  */
-async function deletePhoto(id, userId) {
+async function deletePhoto(id, userId, isAdmin = false) {
   const imageToRemove = await sequelize.transaction(async (t) => {
-    const photo = await findOwnedPhotoOrFail(id, userId, { transaction: t });
+    const photo = await findOwnedPhotoOrFail(id, userId, { transaction: t }, isAdmin);
 
     await Like.destroy({ where: { photoId: photo.id }, transaction: t });
     await Comment.destroy({ where: { photoId: photo.id }, transaction: t });
@@ -369,7 +374,7 @@ async function deletePhoto(id, userId) {
     await photo.destroy({ transaction: t });
     await User.decrement('photosCount', {
       by: 1,
-      where: { id: userId },
+      where: { id: photo.userId },
       transaction: t,
     });
 

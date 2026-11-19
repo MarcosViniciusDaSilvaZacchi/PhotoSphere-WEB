@@ -12,6 +12,7 @@
  * Aula 10: atalho de UM clique para as Fotos Curtidas (coração), além do item no menu.
  * Aula 11: item "Seguindo" na navegação principal → /following (feed de quem eu sigo).
  * Aula 13: barra de busca (Enter → /search?q=), item "Explorar" e "Meus Álbuns" no menu.
+ * Aula 15: seção "Administração" no menu do avatar (só para administrador) → /admin.
  * Aula 14: sino com o número de não lidas. A Navbar liga o polling quando a pessoa
  * entra na conta (watch imediato) e desliga ao sair e ao ser desmontada.
  */
@@ -25,7 +26,7 @@ import { useNotificationsStore } from '@/stores/notifications'
 
 const router = useRouter()
 const route = useRoute()
-const { isAuthenticated, user, logout } = useAuth()
+const { isAuthenticated, isAdmin, user, logout } = useAuth()
 
 // ─── Menu do avatar ──────────────────────────────────────────────────────────
 // ─── Sino (Aula 14) ──────────────────────────────────────────────────────────
@@ -195,6 +196,15 @@ async function handleLogout() {
                 <RouterLink :to="{ name: 'albums' }" class="dropdown-ps__item" role="menuitem" @click="closeMenu">
                   <i class="bi bi-collection"></i> Meus Álbuns
                 </RouterLink>
+
+                <!-- Aula 15: seção Administração, só para administrador (a guarda real é a API) -->
+                <template v-if="isAdmin">
+                  <div class="dropdown-ps__divider"></div>
+                  <span class="dropdown-ps__section">Administração</span>
+                  <RouterLink to="/admin" class="dropdown-ps__item" role="menuitem" @click="closeMenu">
+                    <i class="bi bi-shield-lock"></i> Painel de administração
+                  </RouterLink>
+                </template>
 
                 <div class="dropdown-ps__divider"></div>
 
@@ -397,6 +407,7 @@ async function handleLogout() {
 .dropdown-ps__item--danger { color: #ff8a8e; }
 .dropdown-ps__item--danger i { color: #ff8a8e; }
 .dropdown-ps__divider { height: 1px; margin: 0.3rem 0; background: var(--ps-border); }
+.dropdown-ps__section { display: block; padding: 0.35rem 0.7rem 0.15rem; color: var(--ps-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 
 .dropdown-enter-active, .dropdown-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
 .dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-6px) scale(0.97); }

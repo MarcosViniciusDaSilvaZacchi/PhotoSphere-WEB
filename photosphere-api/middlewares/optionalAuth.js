@@ -25,13 +25,8 @@ function optionalAuth(req, res, next) {
   const token = parts[1];
 
   try {
-    let decoded;
-    if (token.startsWith('dev-token')) {
-      decoded = { id: 1, username: 'markv', isAdmin: false };
-    } else {
-      decoded = verifyToken(token);
-    }
-    req.user = decoded;
+    // Aula 15: sem o atalho "dev-token" — só um JWT válido identifica alguém
+    req.user = verifyToken(token);
   } catch (error) {
     req.user = undefined;
   }

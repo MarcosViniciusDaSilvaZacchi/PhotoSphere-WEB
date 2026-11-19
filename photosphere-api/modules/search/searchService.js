@@ -13,18 +13,9 @@ const { Op } = require('sequelize');
 const Photo = require('../photo/photoModel');
 const User = require('../user/userModel');
 const { SEARCH } = require('../../config/constants');
+const { escapeLike } = require('../../utils/escapeLike'); // Aula 15: extraído para utils/ (agora também usado pelo painel)
 
 const PUBLIC_USER_ATTRIBUTES = ['id', 'username', 'fullName', 'profilePicture'];
-
-/**
- * No LIKE, % (qualquer sequência) e _ (qualquer caractere) são CURINGAS.
- * Sem o escape, buscar "%%" virava LIKE '%%%%' — que casa com tudo — e "__"
- * casava com qualquer título de 2+ letras. O \ antes de cada curinga (e do
- * próprio \) faz o MySQL tratá-los como texto comum.
- */
-function escapeLike(text) {
-  return text.replace(/[\\%_]/g, '\\$&');
-}
 
 async function searchPhotos(query) {
   return Photo.findAll({
